@@ -1,0 +1,74 @@
+# The 13 canonical global trade/shipping chokepoints — narrow straits
+# and canals where a huge share of world trade physically has to pass
+# through, so disruption there (blockage, conflict, sanctions
+# enforcement) has outsized economic/geopolitical impact.
+#
+# Ported from worldmonitor's src/config/chokepoint-registry.ts
+# (github.com/koala73/worldmonitor, AGPL-3.0) -- coordinates and names
+# only, not their routing/shock-model logic.
+chokepoints:
+  - id: suez
+    name: "Suez Canal"
+    lat: 30.5
+    lon: 32.3
+    aliases: ["suez canal", "suez"]
+  - id: malacca_strait
+    name: "Strait of Malacca"
+    lat: 2.5
+    lon: 101.5
+    aliases: ["strait of malacca", "malacca strait"]
+  - id: hormuz_strait
+    name: "Strait of Hormuz"
+    lat: 26.5
+    lon: 56.5
+    aliases: ["strait of hormuz", "hormuz strait", "hormuz"]
+  - id: bab_el_mandeb
+    name: "Bab el-Mandeb"
+    lat: 12.5
+    lon: 43.3
+    aliases: ["bab el-mandeb", "bab-el-mandeb", "mandeb strait"]
+  - id: panama
+    name: "Panama Canal"
+    lat: 9.1
+    lon: -79.7
+    aliases: ["panama canal"]
+  - id: taiwan_strait
+    name: "Taiwan Strait"
+    lat: 24.0
+    lon: 119.5
+    aliases: ["taiwan strait"]
+  - id: cape_of_good_hope
+    name: "Cape of Good Hope"
+    lat: -34.36
+    lon: 18.49
+    aliases: ["cape of good hope"]
+  - id: gibraltar
+    name: "Strait of Gibraltar"
+    lat: 35.9
+    lon: -5.6
+    aliases: ["strait of gibraltar", "gibraltar strait"]
+  - id: bosphorus
+    name: "Bosporus Strait"
+    lat: 41.1
+    lon: 29.0
+    aliases: ["bosporus", "bosphorus"]
+  - id: korea_strait
+    name: "Korea Strait"
+    lat: 34.0
+    lon: 129.0
+    aliases: ["korea strait"]
+  - id: dover_strait
+    name: "Dover Strait"
+    lat: 51.0
+    lon: 1.5
+    aliases: ["strait of dover", "dover strait"]
+  - id: kerch_strait
+    name: "Kerch Strait"
+    lat: 45.3
+    lon: 36.6
+    aliases: ["kerch strait", "kerch bridge"]
+  - id: lombok_strait
+    name: "Lombok Strait"
+    lat: -8.5
+    lon: 115.7
+    aliases: ["lombok strait"]

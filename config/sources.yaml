@@ -1,8 +1,7 @@
-# GeoWatch Pro — single sources config
-# All RSS feeds, pages, and BRICS sources in one place.
-# Edit this file only. Set enabled: false to skip a source.
-# type: rss | page | scrape   (scrape/tier-3 off by default)
-
+# GeoWatch source list.
+# Base list plus 188 feeds pulled from worldmonitor's validated
+# rss-feeds-report.csv (github.com/koala73/worldmonitor), filtered to
+# geopolitics-relevant categories and mapped onto our own category names.
 sources:
 - name: Agencia Brasil
   url: https://agenciabrasil.ebc.com.br/rss.xml
@@ -487,3 +486,943 @@ sources:
   type: rss
   country: UAE
   tier: 1
+- name: AP News
+  url: https://news.google.com/rss/search?q=site:apnews.com&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Reuters World
+  url: https://news.google.com/rss/search?q=site:reuters.com+world&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: NPR News
+  url: https://feeds.npr.org/1001/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Politico
+  url: https://news.google.com/rss/search?q=site:politico.com+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: France 24 [en]
+  url: https://www.france24.com/en/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: France 24 [fr]
+  url: https://www.france24.com/fr/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: France 24 [es]
+  url: https://www.france24.com/es/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: France 24 [ar]
+  url: https://www.france24.com/ar/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [en]
+  url: https://www.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [fr]
+  url: https://fr.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [de]
+  url: https://de.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [it]
+  url: https://it.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [es]
+  url: https://es.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [pt]
+  url: https://pt.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: EuroNews [ru]
+  url: https://ru.euronews.com/rss?format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Le Monde [en]
+  url: https://www.lemonde.fr/en/rss/une.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Le Monde [fr]
+  url: https://www.lemonde.fr/rss/une.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: DW News [en]
+  url: https://rss.dw.com/xml/rss-en-all
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: DW News [de]
+  url: https://rss.dw.com/xml/rss-de-all
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: El País
+  url: https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: El Mundo
+  url: https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Mundo
+  url: https://www.bbc.com/mundo/index.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Tagesschau
+  url: https://www.tagesschau.de/xml/rss2/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Der Spiegel
+  url: https://www.spiegel.de/schlagzeilen/tops/index.rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Die Zeit
+  url: https://newsfeed.zeit.de/index
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: ANSA
+  url: https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Repubblica
+  url: https://www.repubblica.it/rss/homepage/rss2.0.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: NOS Nieuws
+  url: https://feeds.nos.nl/nosnieuwsalgemeen
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: NRC
+  url: https://www.nrc.nl/rss/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: SVT Nyheter
+  url: https://www.svt.se/nyheter/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Svenska Dagbladet
+  url: https://www.svd.se/feed/articles.rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Turkce
+  url: https://feeds.bbci.co.uk/turkce/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: DW Turkish
+  url: https://rss.dw.com/xml/rss-tur-all
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Hurriyet
+  url: https://www.hurriyet.com.tr/rss/anasayfa
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Polsat News
+  url: https://www.polsatnews.pl/rss/wszystkie.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Rzeczpospolita
+  url: https://www.rp.pl/rss_main
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Kathimerini
+  url: https://news.google.com/rss/search?q=site:kathimerini.gr+when:2d&hl=el&gl=GR&ceid=GR:el
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Naftemporiki
+  url: https://www.naftemporiki.gr/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: in.gr
+  url: https://www.in.gr/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: iefimerida
+  url: https://www.iefimerida.gr/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Proto Thema
+  url: https://news.google.com/rss/search?q=site:protothema.gr+when:2d&hl=el&gl=GR&ceid=GR:el
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Russian
+  url: https://feeds.bbci.co.uk/russian/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Meduza
+  url: https://meduza.io/rss/all
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Novaya Gazeta Europe
+  url: https://novayagazeta.eu/feed/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: TASS
+  url: https://news.google.com/rss/search?q=site:tass.com+OR+TASS+Russia+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Kyiv Independent
+  url: https://news.google.com/rss/search?q=site:kyivindependent.com+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Moscow Times
+  url: https://www.themoscowtimes.com/rss/news
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Middle East
+  url: https://feeds.bbci.co.uk/news/world/middle_east/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Al Jazeera [ar]
+  url: https://www.aljazeera.net/aljazeerarss/a7c186be-1adb-4b11-a982-4783e765316e/4e17ecdc-8fb9-40de-a5d6-d00f72384a51
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Al Arabiya
+  url: https://news.google.com/rss/search?q=site:english.alarabiya.net+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Guardian ME
+  url: https://www.theguardian.com/world/middleeast/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Persian
+  url: http://feeds.bbci.co.uk/persian/tv-and-radio-37434376/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Iran International
+  url: https://news.google.com/rss/search?q=site:iranintl.com+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Fars News
+  url: https://news.google.com/rss/search?q=site:farsnews.ir+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Haaretz
+  url: https://news.google.com/rss/search?q=site:haaretz.com+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Arab News
+  url: https://news.google.com/rss/search?q=site:arabnews.com+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: CNBC
+  url: https://www.cnbc.com/id/100003114/device/rss/rss.html
+  category: trade
+  enabled: true
+  type: rss
+- name: MarketWatch
+  url: https://news.google.com/rss/search?q=site:marketwatch.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Yahoo Finance
+  url: https://finance.yahoo.com/news/rssindex
+  category: trade
+  enabled: true
+  type: rss
+- name: Financial Times
+  url: https://www.ft.com/rss/home
+  category: trade
+  enabled: true
+  type: rss
+- name: Reuters Business
+  url: https://news.google.com/rss/search?q=site:reuters.com+business+markets&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: White House
+  url: https://news.google.com/rss/search?q=site:whitehouse.gov&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: State Dept
+  url: https://news.google.com/rss/search?q=site:state.gov+OR+"State+Department"&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Treasury
+  url: https://news.google.com/rss/search?q=site:treasury.gov+OR+"Treasury+Department"&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: DOJ
+  url: https://news.google.com/rss/search?q=site:justice.gov+OR+"Justice+Department"+DOJ&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Federal Reserve
+  url: https://www.federalreserve.gov/feeds/press_all.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: SEC
+  url: https://www.sec.gov/news/pressreleases.rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: CDC
+  url: https://news.google.com/rss/search?q=site:cdc.gov+OR+CDC+health&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: FEMA
+  url: https://news.google.com/rss/search?q=site:fema.gov+OR+FEMA+emergency&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: DHS
+  url: https://news.google.com/rss/search?q=site:dhs.gov+OR+"Homeland+Security"&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: UN News
+  url: https://news.un.org/feed/subscribe/en/news/all/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: CISA
+  url: https://www.cisa.gov/cybersecurity-advisories/all.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Atlantic Council
+  url: https://www.atlanticcouncil.org/feed/
+  category: research
+  enabled: true
+  type: rss
+- name: Foreign Affairs
+  url: https://www.foreignaffairs.com/rss.xml
+  category: research
+  enabled: true
+  type: rss
+- name: CSIS
+  url: https://news.google.com/rss/search?q=site:csis.org+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: RAND
+  url: https://news.google.com/rss/search?q=site:rand.org+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Brookings
+  url: https://news.google.com/rss/search?q=site:brookings.edu+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Carnegie
+  url: https://news.google.com/rss/search?q=site:carnegieendowment.org+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: War on the Rocks
+  url: https://warontherocks.com/feed
+  category: research
+  enabled: true
+  type: rss
+- name: AEI
+  url: https://www.aei.org/feed/
+  category: research
+  enabled: true
+  type: rss
+- name: Responsible Statecraft
+  url: https://responsiblestatecraft.org/feed/
+  category: research
+  enabled: true
+  type: rss
+- name: RUSI
+  url: https://news.google.com/rss/search?q=site:rusi.org+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: FPRI
+  url: https://www.fpri.org/feed/
+  category: research
+  enabled: true
+  type: rss
+- name: Jamestown
+  url: https://jamestown.org/feed/
+  category: research
+  enabled: true
+  type: rss
+- name: WHO
+  url: https://www.who.int/rss-feeds/news-english.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: UNHCR
+  url: https://news.google.com/rss/search?q=site:unhcr.org+OR+UNHCR+refugees+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Africa News
+  url: https://news.google.com/rss/search?q=(Africa+OR+Nigeria+OR+Kenya+OR+"South+Africa"+OR+Ethiopia)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Sahel Crisis
+  url: https://news.google.com/rss/search?q=(Sahel+OR+Mali+OR+Niger+OR+"Burkina+Faso"+OR+Wagner)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Africa
+  url: https://feeds.bbci.co.uk/news/world/africa/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Jeune Afrique
+  url: https://www.jeuneafrique.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Africanews [en]
+  url: https://www.africanews.com/feed/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Africanews [fr]
+  url: https://fr.africanews.com/feed/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Afrique
+  url: https://www.bbc.com/afrique/index.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Premium Times
+  url: https://www.premiumtimesng.com/feed
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Vanguard Nigeria
+  url: https://www.vanguardngr.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Channels TV
+  url: https://www.channelstv.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Daily Trust
+  url: https://dailytrust.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: ThisDay
+  url: https://www.thisdaylive.com/feed
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Latin America
+  url: https://news.google.com/rss/search?q=(Brazil+OR+Mexico+OR+Argentina+OR+Venezuela+OR+Colombia)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Latin America
+  url: https://feeds.bbci.co.uk/news/world/latin_america/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Reuters LatAm
+  url: https://news.google.com/rss/search?q=site:reuters.com+(Brazil+OR+Mexico+OR+Argentina)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Guardian Americas
+  url: https://www.theguardian.com/world/americas/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Clarín
+  url: https://www.clarin.com/rss/lo-ultimo/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Brasil Paralelo
+  url: https://www.brasilparalelo.com.br/noticias/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: El Tiempo
+  url: https://www.eltiempo.com/rss/mundo_latinoamerica.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: La Silla Vacía
+  url: https://www.lasillavacia.com/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Mexico News Daily
+  url: https://mexiconewsdaily.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Mexico Security
+  url: https://news.google.com/rss/search?q=(Mexico+cartel+OR+Mexico+violence+OR+Mexico+troops+OR+narco+Mexico)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: AP Mexico
+  url: https://news.google.com/rss/search?q=site:apnews.com+Mexico+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: InSight Crime
+  url: https://insightcrime.org/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: France 24 LatAm
+  url: https://www.france24.com/en/americas/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Asia News
+  url: https://news.google.com/rss/search?q=(China+OR+Japan+OR+Korea+OR+India+OR+ASEAN)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Asia
+  url: https://feeds.bbci.co.uk/news/world/asia/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: The Diplomat
+  url: https://thediplomat.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: South China Morning Post
+  url: https://www.scmp.com/rss/91/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Reuters Asia
+  url: https://news.google.com/rss/search?q=site:reuters.com+(China+OR+Japan+OR+Taiwan+OR+Korea)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Xinhua
+  url: https://news.google.com/rss/search?q=site:xinhuanet.com+OR+Xinhua+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Japan Today
+  url: https://japantoday.com/feed/atom
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Nikkei Asia
+  url: https://news.google.com/rss/search?q=site:asia.nikkei.com+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Asahi Shimbun
+  url: https://www.asahi.com/rss/asahi/newsheadlines.rdf
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: The Hindu
+  url: https://www.thehindu.com/news/national/feeder/default.rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: CNA
+  url: https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: MIIT (China)
+  url: https://news.google.com/rss/search?q=site:miit.gov.cn+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: MOFCOM (China)
+  url: https://news.google.com/rss/search?q=site:mofcom.gov.cn+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: ABC News Australia
+  url: https://www.abc.net.au/news/feed/2942460/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Guardian Australia
+  url: https://www.theguardian.com/australia-news/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Island Times (Palau)
+  url: https://islandtimes.org/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Oil & Gas
+  url: https://news.google.com/rss/search?q=(oil+price+OR+OPEC+OR+"natural+gas"+OR+pipeline+OR+LNG)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Nuclear Energy
+  url: https://news.google.com/rss/search?q=("nuclear+energy"+OR+"nuclear+power"+OR+uranium+OR+IAEA)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Reuters Energy
+  url: https://news.google.com/rss/search?q=site:reuters.com+(oil+OR+gas+OR+energy+OR+OPEC)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Mining & Resources
+  url: https://news.google.com/rss/search?q=(lithium+OR+"rare+earth"+OR+cobalt+OR+mining)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Krebs Security
+  url: https://krebsonsecurity.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: The Hacker News
+  url: https://feeds.feedburner.com/TheHackersNews
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Dark Reading
+  url: https://www.darkreading.com/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Schneier
+  url: https://www.schneier.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Politico Tech
+  url: https://rss.politico.com/technology.xml
+  category: trade
+  enabled: true
+  type: rss
+- name: AI Regulation
+  url: https://news.google.com/rss/search?q=AI+regulation+OR+"artificial+intelligence"+law+OR+policy+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Tech Antitrust
+  url: https://news.google.com/rss/search?q=tech+antitrust+OR+FTC+Google+OR+FTC+Apple+OR+FTC+Amazon+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: EFF News
+  url: https://news.google.com/rss/search?q=site:eff.org+OR+"Electronic+Frontier+Foundation"+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: EU Digital Policy
+  url: https://news.google.com/rss/search?q=("Digital+Services+Act"+OR+"Digital+Markets+Act"+OR+"EU+AI+Act"+OR+"GDPR")+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Euractiv Digital
+  url: https://news.google.com/rss/search?q=site:euractiv.com+digital+OR+tech+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: EU Commission Digital
+  url: https://news.google.com/rss/search?q=site:ec.europa.eu+digital+OR+technology+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: China Tech Policy
+  url: https://news.google.com/rss/search?q=(China+tech+regulation+OR+China+AI+policy+OR+MIIT+technology)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: UK Tech Policy
+  url: https://news.google.com/rss/search?q=(UK+AI+safety+OR+"Online+Safety+Bill"+OR+UK+tech+regulation)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: India Tech Policy
+  url: https://news.google.com/rss/search?q=(India+tech+regulation+OR+India+data+protection+OR+India+AI+policy)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Brookings Tech
+  url: https://news.google.com/rss/search?q=site:brookings.edu+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: CSIS Tech
+  url: https://news.google.com/rss/search?q=site:csis.org+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Stanford HAI
+  url: https://news.google.com/rss/search?q=site:hai.stanford.edu+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: OECD Digital
+  url: https://news.google.com/rss/search?q=site:oecd.org+digital+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: EU Tech Policy
+  url: https://news.google.com/rss/search?q=("EU+tech+policy"+OR+"European+digital"+OR+Bruegel+tech)+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Chatham House Tech
+  url: https://news.google.com/rss/search?q=site:chathamhouse.org+technology+OR+AI+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: ISEAS (Singapore)
+  url: https://news.google.com/rss/search?q=site:iseas.edu.sg+technology+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: ORF Tech (India)
+  url: https://news.google.com/rss/search?q=(India+tech+policy+OR+ORF+technology+OR+"Observer+Research+Foundation"+tech)+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: RIETI (Japan)
+  url: https://news.google.com/rss/search?q=site:rieti.go.jp+technology+when:30d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Asia Pacific Tech
+  url: https://news.google.com/rss/search?q=("Asia+Pacific"+tech+policy+OR+"Lowy+Institute"+technology)+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: China Tech Analysis
+  url: https://news.google.com/rss/search?q=("China+tech+strategy"+OR+"Chinese+AI"+OR+"China+semiconductor")+analysis+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: CNBC Tech
+  url: https://www.cnbc.com/id/19854910/device/rss/rss.html
+  category: trade
+  enabled: true
+  type: rss
+- name: MarketWatch Tech
+  url: https://news.google.com/rss/search?q=site:marketwatch.com+technology+markets+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Seeking Alpha Tech
+  url: https://seekingalpha.com/market_currents.xml
+  category: trade
+  enabled: true
+  type: rss
+- name: Seeking Alpha
+  url: https://seekingalpha.com/market_currents.xml
+  category: trade
+  enabled: true
+  type: rss
+- name: Reuters Markets
+  url: https://news.google.com/rss/search?q=site:reuters.com+markets+stocks+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Bloomberg Markets
+  url: https://news.google.com/rss/search?q=site:bloomberg.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Investing.com News
+  url: https://news.google.com/rss/search?q=site:investing.com+markets+when:1d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Gold & Metals
+  url: https://news.google.com/rss/search?q=(gold+price+OR+silver+price+OR+copper+OR+platinum+OR+"precious+metals")+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Agriculture
+  url: https://news.google.com/rss/search?q=(wheat+OR+corn+OR+soybeans+OR+coffee+OR+sugar)+price+OR+commodity+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Commodity Trading
+  url: https://news.google.com/rss/search?q=("commodity+trading"+OR+"futures+market"+OR+CME+OR+NYMEX+OR+COMEX)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: ECB Watch
+  url: https://news.google.com/rss/search?q=("European+Central+Bank"+OR+ECB+OR+Lagarde)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: BoJ Watch
+  url: https://news.google.com/rss/search?q=("Bank+of+Japan"+OR+BoJ)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: BoE Watch
+  url: https://news.google.com/rss/search?q=("Bank+of+England"+OR+BoE)+monetary+policy+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: PBoC Watch
+  url: https://news.google.com/rss/search?q=("People%27s+Bank+of+China"+OR+PBoC+OR+PBOC)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Global Central Banks
+  url: https://news.google.com/rss/search?q=("rate+hike"+OR+"rate+cut"+OR+"interest+rate+decision")+central+bank+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Economic Data
+  url: https://news.google.com/rss/search?q=(CPI+OR+inflation+OR+GDP+OR+"jobs+report"+OR+"nonfarm+payrolls"+OR+PMI)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Trade & Tariffs
+  url: https://news.google.com/rss/search?q=(tariff+OR+"trade+war"+OR+"trade+deficit"+OR+sanctions)+when:2d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Housing Market
+  url: https://news.google.com/rss/search?q=("housing+market"+OR+"home+prices"+OR+"mortgage+rates"+OR+REIT)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Financial Regulation
+  url: https://news.google.com/rss/search?q=(SEC+OR+CFTC+OR+FINRA+OR+FCA)+regulation+OR+enforcement+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Banking Rules
+  url: https://news.google.com/rss/search?q=(Basel+OR+"capital+requirements"+OR+"banking+regulation")+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Crypto Regulation
+  url: https://news.google.com/rss/search?q=(crypto+regulation+OR+"digital+asset"+regulation+OR+"stablecoin"+regulation)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: trade
+  enabled: true
+  type: rss
+- name: Hedge Fund News
+  url: https://news.google.com/rss/search?q=("hedge+fund"+OR+"Bridgewater"+OR+"Citadel"+OR+"Renaissance")+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Private Equity
+  url: https://news.google.com/rss/search?q=("private+equity"+OR+Blackstone+OR+KKR+OR+Apollo+OR+Carlyle)+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Sovereign Wealth
+  url: https://news.google.com/rss/search?q=("sovereign+wealth+fund"+OR+"pension+fund"+OR+"institutional+investor")+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Market Outlook
+  url: https://news.google.com/rss/search?q=("market+outlook"+OR+"stock+market+forecast"+OR+"bull+market"+OR+"bear+market")+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Risk & Volatility
+  url: https://news.google.com/rss/search?q=(VIX+OR+"market+volatility"+OR+"risk+off"+OR+"market+correction")+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Bank Research
+  url: https://news.google.com/rss/search?q=("Goldman+Sachs"+OR+"JPMorgan"+OR+"Morgan+Stanley")+forecast+OR+outlook+when:3d&hl=en-US&gl=US&ceid=US:en
+  category: research
+  enabled: true
+  type: rss
+- name: Arabian Business
+  url: https://news.google.com/rss/search?q=site:arabianbusiness.com+(Saudi+Arabia+OR+UAE+OR+GCC)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: The National
+  url: https://news.google.com/rss/search?q=site:thenationalnews.com+(Abu+Dhabi+OR+UAE+OR+Saudi)+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Gulf FDI
+  url: https://news.google.com/rss/search?q=(PIF+OR+"DP+World"+OR+Mubadala+OR+ADNOC+OR+Masdar+OR+"ACWA+Power")+infrastructure+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Gulf Investments
+  url: https://news.google.com/rss/search?q=("Saudi+Arabia"+OR+"UAE"+OR+"Abu+Dhabi")+investment+infrastructure+when:7d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Vision 2030
+  url: https://news.google.com/rss/search?q="Vision+2030"+(project+OR+investment+OR+announced)+when:14d&hl=en-US&gl=US&ceid=US:en
+  category: geopolitics
+  enabled: true
+  type: rss

@@ -1,0 +1,32 @@
+# One command to run GeoWatch, optionally with MongoDB instead of SQLite.
+#
+#   SQLite (default, simplest):
+#     docker compose up geowatch
+#
+#   MongoDB (persistent, works better if you scale beyond one box):
+#     docker compose --profile mongo up
+
+services:
+  geowatch:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      - geowatch-data:/app/data
+      - ./config:/app/config   # edit sources.yaml/streams.yaml on the host, no rebuild needed
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    profiles: ["mongo"]        # only starts with --profile mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  geowatch-data:
+  mongo-data:

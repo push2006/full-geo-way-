@@ -29,8 +29,18 @@ _running = True
 
 def _handle_signal(sig, frame):
     global _running
-    print("\n⏹  Stopping 24/7 mode...")
+    print("\n⏹  Stopping...")
     _running = False
+    # sys.exit() here raises SystemExit wherever the main thread currently
+    # is — inside do_24_7's own loop when running standalone (run.py 24),
+    # or inside Flask's blocking app.run() when running do_serve (plain
+    # run.py). Without this, Ctrl+C only ever flipped `_running`, which
+    # do_24_7's own loop checks (fine on its own) but Flask's dev server
+    # never does — so in serve mode the dashboard process would never
+    # actually stop on Ctrl+C, only the background collector thread would.
+    # SystemExit exits cleanly (no traceback) unlike an uncaught
+    # KeyboardInterrupt, so this is a strictly cleaner shutdown too.
+    sys.exit(0)
 
 
 def do_import(path: str = None):
@@ -240,12 +250,57 @@ def do_streams():
     return streams
 
 
+
+def do_sanctions(quiet: bool = False):
+    """Download OFAC SDN list and screen recent content for name hits."""
+    from core.config import ENABLE_SANCTIONS_SCREEN
+    if not ENABLE_SANCTIONS_SCREEN:
+        if not quiet:
+            print("⏭  Sanctions screen disabled (ENABLE_SANCTIONS_SCREEN=false)")
+        return 0
+    from core.sanctions import update_ofac_names, screen_text
+    from core.storage import get_content_items, get_session, init_db
+    if not quiet:
+        print("🛂 OFAC sanctions screen...")
+    names = update_ofac_names()
+    if not names:
+        if not quiet:
+            print("   No OFAC names loaded")
+        return 0
+    init_db()
+    session = get_session()
+    items = get_content_items(session, limit=100)
+    hits_total = 0
+    for it in items:
+        text = " ".join([
+            str(it.get("title") or it.get("name") or ""),
+            str(it.get("content") or it.get("content_preview") or ""),
+        ])
+        hits = screen_text(text, names)
+        if hits:
+            hits_total += 1
+            if not quiet:
+                title = (it.get("title") or it.get("name") or it.get("url") or "")[:60]
+                print(f"   HIT: {title} → {', '.join(hits[:5])}")
+    if hasattr(session, "close"):
+        session.close()
+    if not quiet:
+        print(f"✅ Sanctions: {hits_total} items with name hits (of {len(items)} screened)")
+    return hits_total
+
+
 def do_cycle(quiet: bool = False):
-    """One update cycle: trends + RSS + optional GNews + check (stores real content)."""
+    """One update cycle: trends + RSS + GNews + sanctions + check."""
+    import time
+    from core.status import record_cycle, set_running
+    set_running(True)
+    t0 = time.time()
     do_trends(quiet=quiet)
     do_rss(all_merged=True, quiet=quiet)
     do_gnews(quiet=quiet)
+    do_sanctions(quiet=quiet)
     changed, errors = do_check(quiet=quiet)
+    record_cycle(changed=changed, errors=errors, duration_sec=time.time() - t0, message="ok")
     return changed, errors
 
 
@@ -253,23 +308,42 @@ def do_serve(interval: int = UPDATE_INTERVAL, host: str = None, port: int = None
     """ONE command: runs the 24/7 collector loop in a background thread
     and the dashboard in the foreground, in the same process. This is
     what you want if you just want to type one thing and have both
-    collection and the dashboard running."""
+    collection and the dashboard running.
+
+    Signal handlers (Ctrl+C) MUST be registered here, on the main
+    thread — signal.signal() raises ValueError if called from a
+    background thread, which is what do_24_7() used to do when this
+    function started it as one. Register once, here, then tell
+    do_24_7() not to register its own.
+    """
     import threading
     from core.config import DASHBOARD_HOST, DASHBOARD_PORT
     from core.webapp import run_dashboard
 
-    t = threading.Thread(target=do_24_7, args=(interval,), daemon=True)
+    global _running
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
+
+    t = threading.Thread(target=do_24_7, args=(interval,), kwargs={"register_signals": False}, daemon=True)
     t.start()
 
     time.sleep(1)  # let the initial import/cycle start printing before the dashboard banner
     run_dashboard(host=host or DASHBOARD_HOST, port=port or DASHBOARD_PORT)
 
 
-def do_24_7(interval: int = UPDATE_INTERVAL):
-    """Run 24/7 — update every N seconds."""
+def do_24_7(interval: int = UPDATE_INTERVAL, register_signals: bool = True):
+    """Run 24/7 — update every N seconds.
+
+    register_signals=False when called from do_serve()'s background
+    thread — signal.signal() only works on the main thread, so calling
+    it here would raise ValueError and silently kill this thread before
+    any collection happened. Only register when this function itself
+    is the main-thread entrypoint (i.e. `python run.py 24` directly).
+    """
     global _running
-    signal.signal(signal.SIGINT, _handle_signal)
-    signal.signal(signal.SIGTERM, _handle_signal)
+    if register_signals:
+        signal.signal(signal.SIGINT, _handle_signal)
+        signal.signal(signal.SIGTERM, _handle_signal)
 
     print("=" * 54)
     print("  GeoWatch Pro — 24/7 MODE")
@@ -297,8 +371,12 @@ def do_24_7(interval: int = UPDATE_INTERVAL):
         print(f"── Cycle #{cycle_num} @ {ts} ──")
         try:
             changed, errors = do_cycle(quiet=True)
+            from core.status import record_cycle
+            record_cycle(cycle_num=cycle_num, changed=changed, errors=errors, message="ok")
             print(f"   ✓ Updated | changed={changed} errors={errors}")
         except Exception as e:
+            from core.status import record_cycle
+            record_cycle(cycle_num=cycle_num, message=f"error: {e}")
             print(f"   ✗ Cycle error: {e}")
         elapsed = time.time() - start
         sleep_for = max(1, interval - elapsed)

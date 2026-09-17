@@ -1,7 +1,7 @@
 """Storage — SQLite (default) or MongoDB. Stores real content, not just metadata."""
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from core.config import STORAGE_BACKEND, SQLITE_PATH, MONGODB_URI, MONGODB_DB
+from core.config import STORAGE_BACKEND, SQLITE_PATH, MONGODB_URI, MONGODB_DB, mongo_targets
 
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -49,19 +49,52 @@ def _init_sqlite():
     Base.metadata.create_all(bind=_engine)
     _Session = sessionmaker(bind=_engine)
 
-def _init_mongo():
+_mongo_clients = {}
+
+
+def _init_mongo(uri: str = None, db: str = None):
+    """Open one Mongo database. Defaults to primary target."""
     from pymongo import MongoClient
-    return MongoClient(MONGODB_URI, serverSelectionTimeoutMS=4000)[MONGODB_DB]
+    targets = mongo_targets()
+    if not targets and not uri:
+        uri = MONGODB_URI
+        db = MONGODB_DB
+    if uri is None:
+        uri = targets[0]["uri"]
+        db = targets[0]["db"]
+    key = f"{uri}|{db}"
+    if key not in _mongo_clients:
+        _mongo_clients[key] = MongoClient(uri, serverSelectionTimeoutMS=6000)
+    return _mongo_clients[key][db]
+
+
+def get_all_mongo_sessions():
+    """All configured Mongo DBs (primary + optional second full URL)."""
+    sessions = []
+    for t in mongo_targets():
+        try:
+            sessions.append((_init_mongo(t["uri"], t["db"]), t["label"]))
+        except Exception as e:
+            print(f"[mongo] skip {t['label']}: {e}")
+    return sessions
+
 
 def init_db():
     if STORAGE_BACKEND == "mongodb":
-        _init_mongo()
+        # touch primary (and secondary if set) so connection errors show early
+        for t in mongo_targets():
+            _init_mongo(t["uri"], t["db"])
     else:
         _init_sqlite()
 
+
 def get_session():
+    """Primary session (writes always go here)."""
     if STORAGE_BACKEND == "mongodb":
-        return _init_mongo()
+        targets = mongo_targets()
+        if not targets:
+            return _init_mongo(MONGODB_URI, MONGODB_DB)
+        return _init_mongo(targets[0]["uri"], targets[0]["db"])
     if _Session is None:
         _init_sqlite()
     return _Session()
@@ -182,17 +215,86 @@ def get_recent_changes(session, limit: int = 40) -> List:
         return list(session["change_logs"].find().sort("detected_at", -1).limit(limit))
     return session.query(ChangeLog).order_by(ChangeLog.detected_at.desc()).limit(limit).all()
 
-def get_content_items(session, limit: int = 100) -> List[Dict]:
-    """Return items that actually have content (for the info feed)."""
+_CONTENT_FILTER_MONGO = {
+    "$or": [
+        {"content_preview": {"$exists": True, "$nin": [None, ""]}},
+        {"content": {"$exists": True, "$nin": [None, ""]}},
+        {"title": {"$exists": True, "$nin": [None, ""]}},
+    ]
+}
+
+
+def count_content_items(session) -> int:
+    """Total items with content (safe for large Mongo collections).
+    With two Mongo URLs, counts are summed (may double-count same URL if present in both)."""
     if STORAGE_BACKEND == "mongodb":
-        return list(session["sites"].find(
-            {"content_preview": {"$exists": True, "$ne": None, "$ne": ""}}
-        ).sort([("score", -1), ("last_changed", -1)]).limit(limit))
+        total = 0
+        sessions = get_all_mongo_sessions() or [(session, "primary")]
+        for sess, _label in sessions:
+            try:
+                total += sess["sites"].count_documents(_CONTENT_FILTER_MONGO)
+            except Exception:
+                pass
+        return total
+    return (session.query(Site)
+            .filter(
+                (Site.content_preview.isnot(None) & (Site.content_preview != ""))
+                | (Site.content.isnot(None) & (Site.content != ""))
+                | (Site.title.isnot(None) & (Site.title != ""))
+            ).count())
+
+
+def get_content_items(session, limit: int = 100, skip: int = 0) -> List[Dict]:
+    """Return items that actually have content (for the info feed).
+    Supports skip/limit pagination for large MongoDB collections (100k–500k+)."""
+    limit = max(1, min(int(limit or 100), 10_000_000))  # hard cap per request
+    skip = max(0, int(skip or 0))
+    if STORAGE_BACKEND == "mongodb":
+        # Merge from primary + optional second full Mongo URL, dedupe by url
+        sessions = get_all_mongo_sessions() or [(session, "primary")]
+        merged = {}
+        # Pull a window from each DB then sort/paginate in memory for stable merge
+        per = max(limit + skip, limit)
+        for sess, label in sessions:
+            try:
+                cursor = (sess["sites"].find(_CONTENT_FILTER_MONGO)
+                          .sort([("score", -1), ("updated_at", -1), ("last_changed", -1)])
+                          .limit(per))
+                for d in cursor:
+                    d = dict(d)
+                    url = d.get("url") or str(d.get("_id"))
+                    if "_id" in d:
+                        d["id"] = str(d.pop("_id"))
+                    if d.get("content"):
+                        d["content"] = str(d["content"])[:2000]
+                    d["_mongo"] = label
+                    prev = merged.get(url)
+                    if not prev or (d.get("score") or 0) >= (prev.get("score") or 0):
+                        merged[url] = d
+            except Exception as e:
+                print(f"[mongo] read {label}: {e}")
+        items = list(merged.values())
+        items.sort(key=lambda x: (-(x.get("score") or 0), str(x.get("updated_at") or "")), reverse=False)
+        items.sort(key=lambda x: (-(x.get("score") or 0)))
+        return items[skip:skip + limit]
     sites = (session.query(Site)
-             .filter(Site.content_preview.isnot(None), Site.content_preview != "")
-             .order_by(Site.score.desc(), Site.last_changed.desc().nullslast())
-             .limit(limit).all())
-    return get_all_sites_summary(session)[:limit]  # already ordered; filter below in UI
+             .filter(
+                 (Site.content_preview.isnot(None) & (Site.content_preview != ""))
+                 | (Site.content.isnot(None) & (Site.content != ""))
+                 | (Site.title.isnot(None) & (Site.title != ""))
+             )
+             .order_by(Site.score.desc(), Site.updated_at.desc().nullslast(),
+                       Site.last_changed.desc().nullslast())
+             .offset(skip).limit(limit).all())
+    return [{
+        "id": s.id, "url": s.url, "name": s.name, "title": s.title,
+        "category": s.category, "enabled": s.enabled,
+        "last_checked": s.last_checked, "last_changed": s.last_changed,
+        "updated_at": s.updated_at, "created_at": s.created_at,
+        "last_status": s.last_status, "error": s.error_message,
+        "content_preview": s.content_preview, "content": (s.content or "")[:2000],
+        "source_type": s.source_type, "platform": s.platform, "score": s.score or 0,
+    } for s in sites]
 
 
 def weekly_top_articles(session, days: int = 7, limit: int = 15) -> List[Dict]:

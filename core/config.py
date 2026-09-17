@@ -48,8 +48,55 @@ def load_sources(enabled_only: bool = False) -> List[Dict]:
 # Storage backend: "sqlite" or "mongodb"
 STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "sqlite").lower()
 SQLITE_PATH = os.getenv("SQLITE_PATH", str(DATA_DIR / "geowatch.db"))
+
+# Primary Mongo (writes + reads). Full URI OK, e.g.:
+# mongodb://user:pass@host:27017/geowatch?authSource=admin
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 MONGODB_DB = os.getenv("MONGODB_DB", "geowatch")
+
+# Optional second Mongo (read-merge into feed). Full URI OK.
+# Leave empty to use only one database.
+MONGODB_URI_2 = os.getenv("MONGODB_URI_2", "").strip()
+MONGODB_DB_2 = os.getenv("MONGODB_DB_2", "").strip()
+
+
+def _db_from_uri(uri: str, fallback: str) -> str:
+    """If URI path has a db name (mongodb://host/dbname), use it; else fallback."""
+    if not uri:
+        return fallback or "geowatch"
+    try:
+        # strip query, take path after scheme
+        no_q = uri.split("?", 1)[0]
+        # mongodb://.../dbname or mongodb+srv://.../dbname
+        if "://" in no_q:
+            after = no_q.split("://", 1)[1]
+            if "/" in after:
+                db = after.split("/", 1)[1].strip("/")
+                if db:
+                    return db.split("/")[0]
+    except Exception:
+        pass
+    return fallback or "geowatch"
+
+
+def mongo_targets():
+    """List of {uri, db, label} for configured Mongo databases (1 or 2)."""
+    targets = []
+    uri1 = (MONGODB_URI or "").strip()
+    if uri1:
+        targets.append({
+            "uri": uri1,
+            "db": _db_from_uri(uri1, MONGODB_DB),
+            "label": "primary",
+        })
+    uri2 = (MONGODB_URI_2 or "").strip()
+    if uri2:
+        targets.append({
+            "uri": uri2,
+            "db": _db_from_uri(uri2, MONGODB_DB_2 or MONGODB_DB),
+            "label": "secondary",
+        })
+    return targets
 
 USER_AGENT = os.getenv("USER_AGENT", "GeoWatch-Pro/2.0 (legitimate research)")
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "25"))
@@ -66,7 +113,7 @@ ENABLE_ONION = os.getenv("ENABLE_ONION", "true").lower() in ("true", "1", "yes")
 RSS_MAX_ITEMS = int(os.getenv("RSS_MAX_ITEMS", "15"))
 
 # Google News keyword collector (ported from geonews-main; off by default)
-ENABLE_GNEWS = os.getenv("ENABLE_GNEWS", "false").lower() in ("true", "1", "yes")
+ENABLE_GNEWS = os.getenv("ENABLE_GNEWS", "true").lower() in ("true", "1", "yes")
 GNEWS_LANGUAGE = os.getenv("GNEWS_LANGUAGE", "en")
 GNEWS_COUNTRY = os.getenv("GNEWS_COUNTRY", "US")
 GNEWS_PERIOD = os.getenv("GNEWS_PERIOD", "1d")
@@ -78,7 +125,7 @@ GNEWS_QUERY_GROUPS = [
 ]
 
 # OFAC sanctions screening (ported from geonews-main; not auto-run)
-ENABLE_SANCTIONS_SCREEN = os.getenv("ENABLE_SANCTIONS_SCREEN", "false").lower() in ("true", "1", "yes")
+ENABLE_SANCTIONS_SCREEN = os.getenv("ENABLE_SANCTIONS_SCREEN", "true").lower() in ("true", "1", "yes")
 
 # --- Notifications (ported from BRICS/geonews, off by default) ---
 ENABLE_EMAIL = os.getenv("ENABLE_EMAIL", "false").lower() in ("true", "1", "yes")

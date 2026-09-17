@@ -15,7 +15,11 @@ STREAMS_FILE = CONFIG_DIR / "streams.yaml"
 _STREAMS_LOCK = threading.Lock()
 
 _URL_PATTERNS = [
-    r"(?:youtube\.com/watch\?v=|youtube\.com/live/|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{6,})",
+    r"(?:youtube\.com/watch\?(?:[^#]*&)?v=)([A-Za-z0-9_-]{6,})",
+    r"youtube\.com/live/([A-Za-z0-9_-]{6,})",
+    r"youtu\.be/([A-Za-z0-9_-]{6,})",
+    r"youtube\.com/embed/([A-Za-z0-9_-]{6,})",
+    r"youtube\.com/shorts/([A-Za-z0-9_-]{6,})",
 ]
 
 
@@ -49,7 +53,7 @@ def _enrich_stream(s):
         vid = extract_video_id(s.get("video_id", ""))
         s["video_id"] = vid
         if vid:
-            s["embed_url"] = f"https://www.youtube.com/embed/{vid}"
+            s["embed_url"] = f"https://www.youtube.com/embed/{vid}?autoplay=0&rel=0"
             s["watch_url"] = f"https://www.youtube.com/watch?v={vid}"
     return s
 
