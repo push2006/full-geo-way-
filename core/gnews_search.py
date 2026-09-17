@@ -15,6 +15,7 @@ from core.config import (
     GNEWS_QUERY_GROUPS,
 )
 from core.classifier import classify, strip_html
+from core.integration import process_batch
 from core.storage import get_session, upsert_site
 
 try:
@@ -36,10 +37,7 @@ def collect(quiet=False):
 
     client = GNews(language=GNEWS_LANGUAGE, country=GNEWS_COUNTRY,
                     max_results=GNEWS_MAX_RESULTS, period=GNEWS_PERIOD)
-
-    seen_titles = set()
-    session = get_session()
-    count = 0
+    raw = []
     for query in _build_queries():
         try:
             results = client.get_news(query)
@@ -47,28 +45,31 @@ def collect(quiet=False):
             if not quiet:
                 print(f"[GNEWS] '{query}': {exc}")
             continue
-
         for art in results:
             title = (art.get("title") or "").strip()
             link = (art.get("url") or "").strip()
-            if not title or not link or title in seen_titles:
+            if not title or not link:
                 continue
-            seen_titles.add(title)
-
             summary = strip_html(art.get("description") or "")
             source = (art.get("publisher") or {}).get("title", "Google News")
-            category = classify(title, summary)
+            raw.append({"title": title, "url": link, "summary": summary,
+                        "source_feed": "Google News", "platform": source,
+                        "source_type": "gnews", "category": classify(title, summary)})
 
-            upsert_site(
-                session, link,
-                name=title[:200], title=title[:200],
-                content=summary, category=category,
-                source_type="gnews", platform=source,
-            )
+    items = process_batch(raw)
+    session = get_session()
+    count = 0
+    try:
+        for it in items:
+            upsert_site(session, it["url"], name=it["title"][:200], title=it["title"][:200],
+                        content=it.get("summary", ""), category=it["category"],
+                        source_type="gnews", platform=it.get("platform", "Google News"),
+                        score=int(it.get("score") or 0), fingerprint=it.get("fingerprint", ""),
+                        corroboration=int(it.get("corroboration") or 1))
             count += 1
-
-    if hasattr(session, "close"):
-        session.close()
+    finally:
+        if hasattr(session, "close"):
+            session.close()
     if not quiet:
         print(f"[GNEWS] stored {count} articles")
     return count

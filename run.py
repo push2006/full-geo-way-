@@ -17,7 +17,6 @@ from core.config import USE_TOR, ENABLE_ONION, STORAGE_BACKEND, SOURCES_FILE, lo
 from core.storage import init_db, get_session, upsert_site, get_enabled_sites, update_site_after_check
 from core.crawler import fetch_page, content_hash, polite_delay
 from core.tor_support import is_onion
-from core.trends import collect_trends
 
 DEMO_CRAWL_URL = "https://www.bbc.com/news"
 DEMO_RSS_URL = "https://feeds.bbci.co.uk/news/world/rss.xml"
@@ -202,6 +201,7 @@ def do_crawl(url: str, pages: int = 15, depth: int = 2, name: str = ""):
 def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False, all_merged: bool = False):
     from core.rss import fetch_rss, collect_all_merged_feeds
     from core.classifier import classify, strip_html
+    from core.integration import process_batch
     init_db()
     session = get_session()
     items = []
@@ -224,6 +224,7 @@ def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False
             print(f"📡 RSS from {len(feeds)} imported feeds...")
         for f in feeds:
             items.extend(fetch_rss(f))
+    items = process_batch(items)
     total = 0
     for it in items:
         if not it.get("url"):
@@ -241,6 +242,8 @@ def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False
             source_type="rss",
             platform="RSS",
             score=score,
+            fingerprint=it.get("fingerprint", ""),
+            corroboration=int(it.get("corroboration") or 1),
         )
         total += 1
     if hasattr(session, "close"):
@@ -255,7 +258,10 @@ def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False
 def do_trends(quiet: bool = False):
     if not quiet:
         print("📈 Social trends (Reddit, HN, YouTube, Mastodon, Telegram, Twitter/X, Facebook, Instagram)...")
+    from core.trends import collect_trends
     items = collect_trends()
+    from core.integration import process_batch
+    items = process_batch(items)
     init_db()
     session = get_session()
     count = 0
@@ -272,6 +278,8 @@ def do_trends(quiet: bool = False):
             source_type="trend",
             platform=it.get("platform") or "",
             score=int(it.get("score") or 0),
+            fingerprint=it.get("fingerprint", ""),
+            corroboration=int(it.get("corroboration") or 1),
         )
         count += 1
     if hasattr(session, "close"):
@@ -313,7 +321,7 @@ def do_streams():
 
 def do_sanctions(quiet: bool = False):
     """Download OFAC SDN list and screen recent content for name hits."""
-    from core.config import ENABLE_SANCTIONS_SCREEN
+    from core.config import ENABLE_SANCTIONS_SCREEN, SANCTIONS_MAX_ITEMS
     if not ENABLE_SANCTIONS_SCREEN:
         if not quiet:
             print("⏭  Sanctions screen disabled (ENABLE_SANCTIONS_SCREEN=false)")
@@ -329,7 +337,7 @@ def do_sanctions(quiet: bool = False):
         return 0
     init_db()
     session = get_session()
-    items = get_content_items(session, limit=100)
+    items = get_content_items(session, limit=max(1, min(SANCTIONS_MAX_ITEMS, 5000)))
     hits_total = 0
     for it in items:
         text = " ".join([
@@ -469,8 +477,6 @@ def do_24_7(interval: int = UPDATE_INTERVAL, register_signals: bool = True):
         print(f"── Cycle #{cycle_num} @ {ts} ──")
         try:
             changed, errors = do_cycle(quiet=True)
-            from core.status import record_cycle
-            record_cycle(cycle_num=cycle_num, changed=changed, errors=errors, message="ok")
             print(f"   ✓ Updated | changed={changed} errors={errors}")
         except Exception as e:
             from core.status import record_cycle

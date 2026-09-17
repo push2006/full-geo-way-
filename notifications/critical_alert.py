@@ -11,6 +11,11 @@ military-action verb appears near a flashpoint country even if the
 words aren't adjacent ("strikes by US and Israel on Iran").
 """
 from core import config as C
+from html import escape
+from urllib.parse import urlparse
+import hashlib
+
+_SENT = set()
 from core.threat_classifier import classify_by_keyword
 from notifications import email_report, whatsapp, telegram
 

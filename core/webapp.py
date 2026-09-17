@@ -22,6 +22,14 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 app = Flask(__name__, static_folder=str(STATIC_DIR))
 
 
+def _int_arg(name: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(request.args.get(name, default) or default)
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(value, maximum))
+
+
 def _serialize(obj):
     """Make datetimes/ORM rows JSON-safe."""
     if isinstance(obj, dict):
@@ -30,6 +38,9 @@ def _serialize(obj):
         return [_serialize(v) for v in obj]
     if hasattr(obj, "isoformat"):
         return obj.isoformat()
+    # MongoDB ObjectId is not JSON serializable by Flask's default encoder.
+    if obj.__class__.__name__ == "ObjectId":
+        return str(obj)
     return obj
 
 
@@ -61,8 +72,8 @@ def api_content():
     Query: ?limit=100&skip=0  (limit max 10000000)
     Returns: { items, total, limit, skip, has_more }
     """
-    limit = int(request.args.get("limit", 10000000) or 10000000)
-    skip = int(request.args.get("skip", 0) or 0)
+    limit = _int_arg("limit", 100, 1, 1000)
+    skip = _int_arg("skip", 0, 0, 10_000_000)
     session = get_session()
     try:
         total = count_content_items(session)
@@ -73,7 +84,7 @@ def api_content():
     return jsonify({
         "items": _serialize(items),
         "total": total,
-        "limit": max(1, min(limit, 10_000_000)),
+        "limit": limit,
         "skip": max(0, skip),
         "has_more": (max(0, skip) + len(items)) < total,
     })
@@ -85,7 +96,7 @@ def api_chokepoints():
     of your recent stories mention it -- a firmer map anchor than
     source pins since these never move."""
     from core.chokepoints import load_chokepoints, match_chokepoints
-    limit = int(request.args.get("limit", 200) or 200)
+    limit = _int_arg("limit", 200, 1, 1000)
     session = get_session()
     try:
         items = get_content_items(session, limit=limit)
@@ -108,7 +119,7 @@ def api_threats():
     worldmonitor's keyword classifier). Query: ?limit=100&level=critical
     to filter to one tier."""
     from core.threat_classifier import classify_by_keyword
-    limit = int(request.args.get("limit", 200) or 200)
+    limit = _int_arg("limit", 200, 1, 1000)
     level_filter = request.args.get("level")
     session = get_session()
     try:
@@ -133,7 +144,7 @@ def api_diplomacy():
     language (talks, ceasefire, treaty...) -- de-escalation signal,
     ported from worldmonitor's diplomacy-keywords.json."""
     from core.diplomacy_signals import is_diplomatic_signal
-    limit = int(request.args.get("limit", 200) or 200)
+    limit = _int_arg("limit", 200, 1, 1000)
     session = get_session()
     try:
         items = get_content_items(session, limit=limit)
@@ -143,6 +154,37 @@ def api_diplomacy():
     signals = [_serialize(it) for it in items
                if is_diplomatic_signal(it.get("title") or it.get("name") or "")]
     return jsonify(signals)
+
+
+@app.route("/api/intelligence")
+def api_intelligence():
+    """Cross-connected intelligence view: categories, threat tiers, diplomacy,
+    corroboration and top items in one response for advanced dashboard clients."""
+    from collections import Counter
+    from core.integration import enrich_item
+    session = get_session()
+    try:
+        items = get_content_items(session, limit=500, skip=0)
+    finally:
+        if hasattr(session, "close"):
+            session.close()
+    cats = Counter(); threats = Counter(); diplo = 0; corroborated = 0
+    enriched = []
+    for raw in items:
+        item = enrich_item(raw)
+        cats[item["category"]] += 1
+        threats[item["threat_level"]] += 1
+        diplo += int(bool(item["diplomatic_signal"]))
+        corroborated += int((item.get("corroboration") or 1) > 1)
+        enriched.append(item)
+    return jsonify({
+        "items": _serialize(enriched[:100]),
+        "categories": dict(cats),
+        "threats": dict(threats),
+        "diplomatic_signals": diplo,
+        "corroborated_items": corroborated,
+        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+    })
 
 
 @app.route("/api/changes")
@@ -295,7 +337,7 @@ def api_geo():
 @app.route("/api/export")
 def api_export():
     """JSON export of recent content (capped for safety)."""
-    limit = min(int(request.args.get("limit", 5000) or 5000), 50000)
+    limit = _int_arg("limit", 5000, 1, 10000)
     session = get_session()
     try:
         items = get_content_items(session, limit=limit, skip=0)
@@ -304,6 +346,24 @@ def api_export():
         if hasattr(session, "close"):
             session.close()
     return jsonify({"exported": len(items), "total_in_db": total, "items": _serialize(items)})
+
+
+@app.route("/api/health")
+def api_health():
+    """Small dependency/storage health check used by deployment and dashboard."""
+    checks = {"database": False, "sources_config": False}
+    try:
+        init_db(); session = get_session(); session.close() if hasattr(session, "close") else None
+        checks["database"] = True
+    except Exception:
+        checks["database"] = False
+    try:
+        from core.config import SOURCES_FILE
+        checks["sources_config"] = SOURCES_FILE.exists()
+    except Exception:
+        pass
+    ok = all(checks.values())
+    return jsonify({"ok": ok, "checks": checks}), (200 if ok else 503)
 
 
 def run_dashboard(host="127.0.0.1", port=8501, debug=False):

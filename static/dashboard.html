@@ -211,6 +211,25 @@ html[data-theme="light"] .map-legend{background:rgba(255,255,255,.94)}
 .stream-form{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; padding:12px; background:var(--panel); border:1px solid var(--line); border-radius:11px}
 .stream-form input{flex:1; min-width:100px}
 
+/* ===== ADVANCED CATEGORY / UX LAYER ===== */
+.category-panel{margin-bottom:12px}
+.category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media(max-width:1050px){.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.category-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;transition:.15s}
+.category-card:hover,.category-card.on{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow)}
+.category-card .ctop{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.category-card .cname{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.category-card .ccount{font-family:var(--mono);font-size:11px;color:var(--acc2)}
+.category-card .ctrack{height:4px;background:var(--elev);border-radius:99px;margin-top:8px;overflow:hidden}
+.category-card .cfill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:99px}
+.category-summary{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.category-summary .pill{cursor:pointer}
+.category-summary .pill:hover{border-color:var(--acc)}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 9px}
+.section-head .t{font-weight:600}
+.section-head .sub{font-size:10px;color:var(--muted)}
+.compact-note{font-size:10px;color:var(--muted)}
 .toast{
   position:fixed; bottom:20px; right:20px; z-index:9999;
   background:var(--panel); border:1px solid var(--line); border-radius:11px;
@@ -287,6 +306,7 @@ html[data-theme="light"] .map-legend{background:rgba(255,255,255,.94)}
 const $ = id => document.getElementById(id);
 const titles = {content:'Feed',sources:'Sources',changes:'Changes',breakdown:'Breakdown',weekly:'Weekly report',map:'World map',streams:'Live streams'};
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => { try { const x=new URL(String(u||''),location.origin); return ['http:','https:'].includes(x.protocol)?x.href:'#'; } catch(_) { return '#'; } };
 const short = (s,n=120) => { s=String(s||''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
 const timeAgo = iso => {
   if(!iso) return '';
@@ -336,8 +356,8 @@ function switchTab(tab){
 }
 
 const CACHE={content:[],sources:[],changes:[],contentTotal:0,contentHasMore:false,points:[],chokepoints:[],summary:null,weekly:null};
-let FILTER='all', SOURCE_FILTER='healthy', SOURCE_TYPE='all', SORT='newest', SRC_SORT='name', CHG_SORT='newest', MAP_MODE='regions';
-let CONTENT_SKIP=0; const CONTENT_PAGE=120;
+let FILTER='all', CATEGORY_FILTER='all', SOURCE_FILTER='healthy', SOURCE_TYPE='all', SORT='newest', SRC_SORT='name', CHG_SORT='newest', MAP_MODE='regions';
+let CONTENT_SKIP=0; const CONTENT_PAGE=60;
 let mapInst=null;
 
 function isCritical(it){
@@ -358,6 +378,37 @@ function sourceType(it){
   if(t.includes('onion')) return 'onion';
   return 'page';
 }
+
+/* Keep the underlying source taxonomy intact, but present it as 12 human-friendly groups. */
+const CATEGORY_GROUPS=[
+  ['Geopolitics',/geopolit|foreign|international|world|diplomacy|diplomatic/],
+  ['Security',/security|defen[cs]e|military|war|conflict|terror|threat|nato|missile|nuclear/],
+  ['Trade & Economy',/trade|econom|market|finance|business|tariff|investment|supply|shipping/],
+  ['Sanctions',/sanction|ofac|embargo|export.?control/],
+  ['Diplomacy',/diplomacy|diplomatic|summit|bilateral|ambassador|treaty/],
+  ['Energy',/energy|oil|gas|pipeline|opec|electric|power/],
+  ['Research',/research|science|academic|study|paper|university/],
+  ['Technology',/tech|technology|ai|cyber|software|semiconductor|chip|space/],
+  ['India & South Asia',/india|pakistan|bangladesh|sri.?lanka|nepal|bhutan|maldives|south.?asia/],
+  ['Humanitarian',/humanitarian|refugee|aid|health|food|disaster|crisis|civilian/],
+  ['Trends',/^trend|youtube|mastodon|hacker.?news|reddit|social/],
+  ['Other',/.*/]
+];
+function displayCategory(value){
+  const raw=String(value||'').trim();
+  if(!raw) return 'Other';
+  const low=raw.toLowerCase();
+  for(const [name,re] of CATEGORY_GROUPS){ if(re.test(low)) return name; }
+  return 'Other';
+}
+function groupedCategories(obj){
+  const out={};
+  for(const [k,v] of Object.entries(obj||{})){
+    const g=displayCategory(k); out[g]=(out[g]||0)+(Number(v)||0);
+  }
+  return out;
+}
+function categoryList(){ return CATEGORY_GROUPS.map(x=>x[0]); }
 
 function sortItems(items, mode){
   const arr=items.slice();
@@ -392,7 +443,7 @@ async function loadStats(){
   try{
     const s=await fetchJSON('/api/summary');
     CACHE.summary=s;
-    const cats=Object.keys(s.by_category||{}).length;
+    const cats=Object.keys(groupedCategories(s.by_category||{})).length;
     $('stats').innerHTML=
       `<div class="stat"><div class="label">Sources</div><div class="val">${s.total_sources??0}</div><div class="sub">configured</div></div>`+
       `<div class="stat"><div class="label">Feed</div><div class="val" id="stat-items">${CACHE.contentTotal||'—'}</div><div class="sub">with content</div></div>`+
@@ -410,28 +461,37 @@ function renderContent(){
   if(FILTER==='high') items=items.filter(it=>(it.score||0)>=5);
   if(FILTER==='rss') items=items.filter(it=>sourceType(it)==='rss');
   if(FILTER==='trend') items=items.filter(it=>sourceType(it)==='trend');
+  if(CATEGORY_FILTER!=='all') items=items.filter(it=>displayCategory(it.category)===CATEGORY_FILTER);
   const qEl=$('q-content'); const q=(qEl&&qEl.value||'').toLowerCase().trim();
   if(q) items=items.filter(it=>[it.title,it.name,it.category,it.platform,it.content_preview,it.url].join(' ').toLowerCase().includes(q));
   items=sortItems(items, SORT);
-  const tiles=items.slice(0,600).map(it=>{
+  const tiles=items.slice(0,60).map(it=>{
     const title=it.title||it.name||it.url||'Untitled';
     const preview=it.content_preview||it.content||'';
     const tags=[
-      it.category&&`<span class="tag">${esc(it.category)}</span>`,
+      it.category&&`<span class="tag">${esc(displayCategory(it.category))}</span>`,
       it.platform&&`<span class="tag">${esc(it.platform)}</span>`,
       isCritical(it)&&`<span class="tag crit">crit</span>`,
       isBrics(it)&&`<span class="tag brics">brics</span>`,
       (it.score||0)>0&&`<span class="score">${it.score}</span>`
     ].filter(Boolean).join('');
     return `<article class="tile">
-      <div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(title)}</a></div>
+      <div class="t"><a href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">${esc(title)}</a></div>
       <div class="m">${tags}</div>
       ${preview?`<div class="preview">${esc(short(preview,140))}</div>`:''}
       <div class="foot"><span>${timeAgo(it.updated_at||it.last_changed||it.last_checked)} ago</span>
-        <a href="${esc(it.url||'#')}" target="_blank" rel="noopener">Open →</a></div>
+        <a href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">Open →</a></div>
     </article>`;
   }).join('');
-  el.innerHTML=`<div class="toolbar">
+  const grouped=groupedCategories((CACHE.summary||{}).by_category||{});
+  const catEntries=Object.entries(grouped).sort((a,b)=>b[1]-a[1]);
+  const catMax=Math.max(1,...catEntries.map(x=>x[1]));
+  const categoryHtml=catEntries.slice(0,12).map(([k,v])=>`<button type="button" class="category-card ${CATEGORY_FILTER===k?'on':''}" data-category="${esc(k)}"><div class="ctop"><span class="cname">${esc(k)}</span><span class="ccount">${v}</span></div><div class="ctrack"><div class="cfill" style="width:${v/catMax*100}%"></div></div></button>`).join('');
+  el.innerHTML=`<div class="category-panel">
+    <div class="section-head"><div class="t">Categories</div><div class="sub">${catEntries.length} groups · click to filter</div></div>
+    <div class="category-grid">${categoryHtml||'<div class="empty" style="grid-column:1/-1">No category data yet.</div>'}</div>
+  </div>
+  <div class="toolbar">
     <input type="search" id="q-content" placeholder="Search feed…" value="${esc(q)}">
     <div class="filters" id="feed-filters">
       <button type="button" class="chip ${FILTER==='all'?'on':''}" data-filter="all">All</button>
@@ -448,7 +508,7 @@ function renderContent(){
       <option value="title" ${SORT==='title'?'selected':''}>Title A–Z</option>
       <option value="category" ${SORT==='category'?'selected':''}>Category</option>
     </select>
-    <span class="count">${items.length}${CACHE.contentTotal?' / '+CACHE.contentTotal:''}</span>
+    <span class="count">showing ${Math.min(items.length,60)}${CACHE.contentTotal?' / '+CACHE.contentTotal:''}</span>
   </div>
   <div class="grid">${tiles||'<div class="empty" style="grid-column:1/-1">No items — wait for a cycle or clear filters.</div>'}</div>
   ${CACHE.contentHasMore?`<div style="text-align:center;margin:12px 0"><button type="button" class="primary" id="btn-load-more">Load more</button></div>`:''}`;
@@ -456,6 +516,7 @@ function renderContent(){
   const ff=$('feed-filters'); if(ff) ff.addEventListener('click',e=>{
     const b=e.target.closest('[data-filter]'); if(!b) return; FILTER=b.dataset.filter; renderContent();
   });
+  el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>{ CATEGORY_FILTER=(CATEGORY_FILTER===b.dataset.category?'all':b.dataset.category); renderContent(); }));
   const so=$('sort-content'); if(so) so.addEventListener('change',()=>{ SORT=so.value; renderContent(); });
   const more=$('btn-load-more'); if(more) more.addEventListener('click',()=>loadContent(false));
 }
@@ -487,7 +548,7 @@ function renderSources(){
   let items=SOURCE_FILTER==='healthy'?healthy:SOURCE_FILTER==='failed'?failed:SOURCE_FILTER==='off'?all.filter(it=>it.enabled===false):all;
   if(SOURCE_TYPE!=='all') items=items.filter(it=>sourceType(it)===SOURCE_TYPE);
   const qEl=$('q-sources'); const q=(qEl&&qEl.value||'').toLowerCase().trim();
-  if(q) items=items.filter(it=>[it.name,it.url,it.category,it.platform,it.source_type].join(' ').toLowerCase().includes(q));
+  if(q) items=items.filter(it=>[it.name,it.url,it.category,displayCategory(it.category),it.platform,it.source_type].join(' ').toLowerCase().includes(q));
   items=sortItems(items, SRC_SORT);
 
   const rows=items.map(it=>{
@@ -496,10 +557,10 @@ function renderSources(){
     const st=sourceType(it);
     return `<div class="row">
       <div>
-        <div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(name)}</a></div>
+        <div class="t"><a href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener">${esc(name)}</a></div>
         <div class="m">${it.enabled!==false?'<span class="tag ok">on</span>':'<span class="tag warn">off</span>'}
           <span class="tag ${st}">${esc(st)}</span>
-          ${it.category?`<span class="tag">${esc(it.category)}</span>`:''}
+          ${it.category?`<span class="tag">${esc(displayCategory(it.category))}</span>`:''}
           ${it.last_status?`<span>HTTP ${esc(it.last_status)}</span>`:''}
         </div>
         ${err&&SOURCE_FILTER!=='healthy'?`<div class="preview" style="color:var(--danger)">${esc(short(err,140))}</div>`:''}
@@ -568,7 +629,7 @@ function renderChanges(){
   const rows=items.map(c=>
     `<div class="row">
       <div>
-        <div class="t"><a href="${esc(c.url||'#')}" target="_blank" rel="noopener">${esc(c.title||c.url||'Change')}</a></div>
+        <div class="t"><a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener">${esc(c.title||c.url||'Change')}</a></div>
         <div class="m"><span class="tag warn">changed</span></div>
         ${c.content_preview?`<div class="preview">${esc(short(c.content_preview,180))}</div>`:''}
       </div>
@@ -616,7 +677,8 @@ async function loadBreakdown(){
       }</div>`;
     };
     const plats=Object.keys(s.by_platform||{}).length;
-    const cats=Object.keys(s.by_category||{}).length;
+    const grouped=groupedCategories(s.by_category||{});
+    const cats=Object.keys(grouped).length;
     $('panel-breakdown').innerHTML=`
       <div class="mini-stats">
         <div class="mini-stat"><div class="n">${s.total_sources??0}</div><div class="l">Sources</div></div>
@@ -626,7 +688,7 @@ async function loadBreakdown(){
       </div>
       <div class="two-col">
         ${mk(s.by_platform,'By platform','linear-gradient(90deg,#4f8cff,#2dd4bf)')}
-        ${mk(s.by_category,'By category','linear-gradient(90deg,#c4b5fd,#4f8cff)')}
+        ${mk(grouped,'By category · grouped','linear-gradient(90deg,#c4b5fd,#4f8cff)')}
       </div>`;
   }catch(e){ $('panel-breakdown').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
@@ -636,15 +698,15 @@ async function loadWeekly(){
   try{
     const data=await fetchJSON('/api/weekly');
     CACHE.weekly=data;
-    const cats=data.categories||{}; const top=data.top||[];
+    const cats=groupedCategories(data.categories||{}); const top=data.top||[];
     const catEntries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
     const max=Math.max(1,...catEntries.map(x=>x[1]));
     const total=catEntries.reduce((a,[,v])=>a+v,0);
     const topHtml=top.map((t,i)=>
       `<article class="tile" style="min-height:110px;max-height:170px">
-        <div class="m"><span class="score">#${i+1}</span>${t.category?`<span class="tag">${esc(t.category)}</span>`:''}${t.score?`<span class="score">${t.score}</span>`:''}</div>
-        <div class="t"><a href="${esc(t.url||'#')}" target="_blank" rel="noopener">${esc(t.title||t.name||'Item')}</a></div>
-        <div class="foot"><span>${esc(t.platform||'')}</span><a href="${esc(t.url||'#')}" target="_blank" rel="noopener">Open →</a></div>
+        <div class="m"><span class="score">#${i+1}</span>${t.category?`<span class="tag">${esc(displayCategory(t.category))}</span>`:''}${t.score?`<span class="score">${t.score}</span>`:''}</div>
+        <div class="t"><a href="${esc(safeUrl(t.url))}" target="_blank" rel="noopener">${esc(t.title||t.name||'Item')}</a></div>
+        <div class="foot"><span>${esc(t.platform||'')}</span><a href="${esc(safeUrl(t.url))}" target="_blank" rel="noopener">Open →</a></div>
       </article>`
     ).join('')||'<div class="empty" style="grid-column:1/-1">No top stories this week yet — let the collector run.</div>';
 
@@ -669,13 +731,38 @@ async function loadWeekly(){
 function ensureMap(){
   const mapEl=$('map'); if(!mapEl) return;
   if(mapInst){ try{ mapInst.invalidateSize(); }catch(_){ } return; }
-  if(typeof L==='undefined'){ $('map-side').innerHTML='<div class="error">Leaflet failed to load (need internet for map tiles).</div>'; return; }
-  const dark=document.documentElement.getAttribute('data-theme')!=='light';
-  mapInst=L.map('map',{worldCopyJump:true}).setView([20,10],2);
-  L.tileLayer(dark
-    ?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    :'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    {attribution:'&copy; OSM &copy; CARTO', maxZoom:8, subdomains:'abcd'}).addTo(mapInst);
+  if(typeof L==='undefined'){ $('map-side').innerHTML='<div class="error">Leaflet failed to load. Check your internet connection and try Refresh.</div>'; return; }
+
+  /*
+   * GeoWatch map tiles:
+   * Use the official OpenStreetMap raster endpoint directly.
+   * No Mapbox/CARTO/Stadia token or API key is required.
+   * Keep attribution visible as required by the tile provider.
+   */
+  mapInst=L.map('map',{
+    worldCopyJump:true,
+    minZoom:1,
+    maxZoom:19,
+    zoomControl:true,
+    attributionControl:true
+  }).setView([20,10],2);
+
+  const tileLayer=L.tileLayer(
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {
+      attribution:'<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">&copy; OpenStreetMap contributors</a>',
+      maxZoom:19,
+      maxNativeZoom:19,
+      updateWhenIdle:true,
+      keepBuffer:2
+    }
+  ).addTo(mapInst);
+
+  tileLayer.on('tileerror',()=>{
+    const legend=$('map-legend');
+    if(legend) legend.textContent='Map tiles could not be loaded. Check your internet connection.';
+  });
+
   drawMapLayers();
   setTimeout(()=>mapInst.invalidateSize(),100);
 }
@@ -759,12 +846,12 @@ async function loadStreams(){
     const cards=list.map(s=>{
       const name=s.name||'Stream'; const embed=s.embed||s.embed_url||''; const link=s.link||s.url||'#';
       return `<div class="stream-card">
-        ${embed?`<iframe src="${esc(embed)}" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>`
+        ${embed?`<iframe src="${esc(safeUrl(embed))}" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>`
           :'<div class="empty" style="height:170px;padding:40px">No embed URL</div>'}
         <div class="meta">
           <div><b>${esc(name)}</b><div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(s.country||'Live')}</div></div>
           <div style="display:flex;gap:5px">
-            <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="padding:5px 8px;font-size:11px">Open</a>
+            <a class="btn" href="${esc(safeUrl(link))}" target="_blank" rel="noopener" style="padding:5px 8px;font-size:11px">Open</a>
             <button type="button" class="btn stream-del" data-name="${esc(name)}" style="padding:5px 8px;font-size:11px">Remove</button>
           </div>
         </div>

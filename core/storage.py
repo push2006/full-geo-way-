@@ -29,6 +29,8 @@ class Site(Base):
     source_type = Column(String(32), default="page")  # page|rss|onion|trend
     platform = Column(String(64), default="")
     score = Column(Integer, default=0)
+    fingerprint = Column(String(64), nullable=True, index=True)
+    corroboration = Column(Integer, default=1)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -47,6 +49,16 @@ def _init_sqlite():
     global _engine, _Session
     _engine = create_engine(f"sqlite:///{SQLITE_PATH}", echo=False)
     Base.metadata.create_all(bind=_engine)
+    # create_all does not alter an existing SQLite table. Add new columns
+    # defensively so upgrades work against an existing GeoWatch database.
+    from sqlalchemy import inspect, text
+    cols = {c["name"] for c in inspect(_engine).get_columns("sites")}
+    with _engine.begin() as conn:
+        if "fingerprint" not in cols:
+            conn.execute(text("ALTER TABLE sites ADD COLUMN fingerprint VARCHAR(64)"))
+        if "corroboration" not in cols:
+            conn.execute(text("ALTER TABLE sites ADD COLUMN corroboration INTEGER DEFAULT 1"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_sites_fingerprint ON sites(fingerprint)"))
     _Session = sessionmaker(bind=_engine)
 
 _mongo_clients = {}
@@ -65,7 +77,16 @@ def _init_mongo(uri: str = None, db: str = None):
     key = f"{uri}|{db}"
     if key not in _mongo_clients:
         _mongo_clients[key] = MongoClient(uri, serverSelectionTimeoutMS=6000)
-    return _mongo_clients[key][db]
+    database = _mongo_clients[key][db]
+    try:
+        database["sites"].create_index("url", unique=True)
+        database["sites"].create_index("fingerprint")
+        database["sites"].create_index([("score", -1), ("updated_at", -1)])
+        database["change_logs"].create_index([("detected_at", -1)])
+    except Exception:
+        # Index creation should not prevent read-only dashboard startup.
+        pass
+    return database
 
 
 # FIX #2: Add explicit cleanup for MongoDB connections to prevent leaks
@@ -113,15 +134,24 @@ def get_session():
 
 def upsert_site(session, url: str, name: str = "", category: str = "general",
                 enabled: bool = True, source_type: str = "page",
-                title: str = "", content: str = "", platform: str = "", score: int = 0):
+                title: str = "", content: str = "", platform: str = "", score: int = 0,
+                fingerprint: str = "", corroboration: int = 1):
     if STORAGE_BACKEND == "mongodb":
         col = session["sites"]
+        existing = col.find_one({"url": url}, {"corroboration": 1, "fingerprint": 1})
+        if existing is None and fingerprint:
+            match = col.find_one({"fingerprint": fingerprint}, {"corroboration": 1})
+            if match:
+                corroboration = max(int(corroboration or 1), int(match.get("corroboration") or 1) + 1)
+                col.update_many({"fingerprint": fingerprint}, {"$set": {"corroboration": corroboration}})
         col.update_one(
             {"url": url},
             {"$set": {
                 "name": name or title, "title": title or name, "category": category,
                 "enabled": enabled, "source_type": source_type, "platform": platform,
-                "score": score, "content": (content or "")[:50000],
+                "score": score, "fingerprint": fingerprint or None,
+                "corroboration": max(1, int(corroboration or 1)),
+                "content": (content or "")[:50000],
                 "content_preview": (content or "")[:800],
                 "updated_at": datetime.now(timezone.utc)
             }, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
@@ -137,15 +167,30 @@ def upsert_site(session, url: str, name: str = "", category: str = "general",
             site.enabled = enabled
             site.source_type = source_type
             site.platform = platform or site.platform
-            site.score = score or site.score
+            if score is not None and score > (site.score or 0):
+                site.score = score
+            if fingerprint:
+                site.fingerprint = fingerprint
+            site.corroboration = max(1, int(corroboration or site.corroboration or 1))
             if content:
                 site.content = content[:50000]
                 site.content_preview = content[:800]
             site.updated_at = datetime.now(timezone.utc)
         else:
+            corr = max(1, int(corroboration or 1))
+            if fingerprint:
+                match = (session.query(Site)
+                         .filter(Site.fingerprint == fingerprint)
+                         .order_by(Site.corroboration.desc())
+                         .first())
+                if match:
+                    corr = max(corr, int(match.corroboration or 1) + 1)
+                    session.query(Site).filter(Site.fingerprint == fingerprint).update(
+                        {Site.corroboration: corr}, synchronize_session=False)
             site = Site(
                 url=url, name=name or title, title=title or name, category=category,
                 enabled=enabled, source_type=source_type, platform=platform, score=score,
+                fingerprint=fingerprint or None, corroboration=corr,
                 content=(content or "")[:50000], content_preview=(content or "")[:800]
             )
             session.add(site)
@@ -219,7 +264,8 @@ def get_all_sites_summary(session) -> List[Dict[str, Any]]:
         "last_checked": s.last_checked, "last_changed": s.last_changed,
         "last_status": s.last_status, "error": s.error_message,
         "content_preview": s.content_preview, "content": s.content,
-        "source_type": s.source_type, "platform": s.platform, "score": s.score
+        "source_type": s.source_type, "platform": s.platform, "score": s.score,
+        "fingerprint": s.fingerprint, "corroboration": s.corroboration or 1
     } for s in sites]
 
 def get_recent_changes(session, limit: int = 40) -> List:
@@ -286,8 +332,7 @@ def get_content_items(session, limit: int = 100, skip: int = 0) -> List[Dict]:
             except Exception as e:
                 print(f"[mongo] read {label}: {e}")
         items = list(merged.values())
-        items.sort(key=lambda x: (-(x.get("score") or 0), str(x.get("updated_at") or "")), reverse=False)
-        items.sort(key=lambda x: (-(x.get("score") or 0)))
+        items.sort(key=lambda x: (-(x.get("score") or 0), str(x.get("updated_at") or "")))
         return items[skip:skip + limit]
     sites = (session.query(Site)
              .filter(
@@ -306,6 +351,7 @@ def get_content_items(session, limit: int = 100, skip: int = 0) -> List[Dict]:
         "last_status": s.last_status, "error": s.error_message,
         "content_preview": s.content_preview, "content": (s.content or "")[:2000],
         "source_type": s.source_type, "platform": s.platform, "score": s.score or 0,
+        "fingerprint": s.fingerprint, "corroboration": s.corroboration or 1,
     } for s in sites]
 
 

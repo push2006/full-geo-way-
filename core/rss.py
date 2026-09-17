@@ -5,7 +5,8 @@ import feedparser
 from core.config import USER_AGENT, REQUEST_TIMEOUT, RSS_MAX_ITEMS, load_sources
 from core.tor_support import get_session_for, is_onion
 from core.classifier import strip_html, classify, is_critical, is_brics_relevant, risk_score
-from core.dedupe import dedupe_items
+from core.dedupe import dedupe_items, dedupe_near_duplicates
+from core.integration import enrich_item, process_batch
 
 
 def _rss_feed_urls() -> List[str]:
@@ -49,7 +50,7 @@ def fetch_rss(url: str, max_items: int = None) -> List[Dict]:
                 "brics": is_brics_relevant(title, summary),
                 "score": risk_score(title, summary),
             })
-        return dedupe_items(items, key="title")
+        return process_batch(items)
     except Exception:
         return []
 
@@ -59,7 +60,7 @@ def collect_feeds(feed_urls: List[str] = None) -> List[Dict]:
     all_items = []
     for url in feeds:
         all_items.extend(fetch_rss(url))
-    return dedupe_items(all_items, key="title")
+    return process_batch(all_items, threshold=0.88)
 
 
 def collect_all_merged_feeds() -> List[Dict]:

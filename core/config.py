@@ -118,7 +118,7 @@ RSS_MAX_ITEMS = int(os.getenv("RSS_MAX_ITEMS", "15"))
 # Google News keyword collector (ported from geonews-main; off by default)
 ENABLE_GNEWS = os.getenv("ENABLE_GNEWS", "false").lower() in ("true", "1", "yes")
 GNEWS_LANGUAGE = os.getenv("GNEWS_LANGUAGE", "en")
-GNEWS_COUNTRY = os.getenv("GNEWS_COUNTRY", "US")
+GNEWS_COUNTRY = os.getenv("GNEWS_COUNTRY", "IN")
 GNEWS_PERIOD = os.getenv("GNEWS_PERIOD", "1d")
 GNEWS_MAX_RESULTS = int(os.getenv("GNEWS_MAX_RESULTS", "20"))
 GNEWS_QUERY_GROUPS = [
@@ -129,6 +129,7 @@ GNEWS_QUERY_GROUPS = [
 
 # OFAC sanctions screening (ported from geonews-main; not auto-run)
 ENABLE_SANCTIONS_SCREEN = os.getenv("ENABLE_SANCTIONS_SCREEN", "false").lower() in ("true", "1", "yes")
+SANCTIONS_MAX_ITEMS = int(os.getenv("SANCTIONS_MAX_ITEMS", "500"))
 
 # --- Notifications (ported from BRICS/geonews, off by default) ---
 ENABLE_EMAIL = os.getenv("ENABLE_EMAIL", "false").lower() in ("true", "1", "yes")

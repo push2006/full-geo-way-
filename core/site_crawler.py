@@ -73,8 +73,8 @@ def crawl_site(start_url: str, max_pages: int = 25, max_depth: int = 2) -> List[
         html, status, error = fetch_raw(url)
         polite_delay()
         if error or not html:
-            results.append({"url": url, "title": "", "text": "", "hash": None, "status": status, "error": error, "depth": depth})
-            pbar.update(1)
+            # Failed fetches are not content pages. Do not count them as
+            # successful crawl results; this keeps crawl statistics honest.
             continue
         title = ""
         try:
@@ -104,8 +104,12 @@ def crawl_and_store(start_url: str, site_name: str = "", max_pages: int = 20, ma
     print(f"Crawled {len(pages)} pages from {start_url}")
     changed = 0
     for page in pages:
+        from core.integration import enrich_item
+        enriched = enrich_item({"title": page["title"], "url": page["url"], "summary": page["text"]})
         site = upsert_site(session, page["url"], name=page["title"] or page["url"],
-                           category="crawled-page", source_type="page")
+                           category=enriched["category"], source_type="page",
+                           score=enriched["score"], fingerprint=enriched["fingerprint"],
+                           corroboration=int(enriched.get("corroboration") or 1))
         last_hash = site.get("last_hash") if isinstance(site, dict) else site.last_hash
         is_changed = last_hash is not None and last_hash != page["hash"]
         if is_changed:

@@ -1,6 +1,8 @@
 """Email digest delivery. OFF unless ENABLE_EMAIL=true in .env."""
 import smtplib
 import datetime
+from html import escape
+from urllib.parse import urlparse
 from email.mime.text import MIMEText
 from core import config as C
 
