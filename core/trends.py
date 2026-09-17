@@ -12,10 +12,14 @@ Platforms:
   as reliable as whichever Nitter instance you point it at)
 """
 import re
+import logging
 from datetime import datetime
 from typing import List, Dict
 import requests
 import feedparser
+
+# FIX #3: Add logging for silent failures
+logger = logging.getLogger(__name__)
 from core.config import (
     USER_AGENT, REQUEST_TIMEOUT, TREND_SUBREDDITS,
     ENABLE_YOUTUBE_TRENDS, YOUTUBE_CHANNEL_IDS,
@@ -38,6 +42,8 @@ def fetch_reddit_hot(subreddit: str = "worldnews", limit: int = 15) -> List[Dict
         session = get_session_for(url)
         resp = session.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
+            # FIX #3: Log the error instead of silently failing
+            logger.warning(f"Reddit r/{subreddit} returned {resp.status_code}")
             return []
         data = resp.json()
         posts = []
@@ -53,7 +59,9 @@ def fetch_reddit_hot(subreddit: str = "worldnews", limit: int = 15) -> List[Dict
                 "created": datetime.utcfromtimestamp(d.get("created_utc", 0)).isoformat() if d.get("created_utc") else "",
             })
         return posts
-    except Exception:
+    # FIX #3: Log exceptions instead of silently failing
+    except Exception as e:
+        logger.error(f"fetch_reddit_hot(r/{subreddit}) failed: {e}")
         return []
 
 
@@ -85,10 +93,13 @@ def fetch_hackernews_top(limit: int = 15) -> List[Dict]:
                         "comments": item.get("descendants", 0),
                         "created": datetime.utcfromtimestamp(item.get("time", 0)).isoformat() if item.get("time") else "",
                     })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"HN item {i} failed: {e}")
                 continue
         return items
-    except Exception:
+    # FIX #3: Log HN failures
+    except Exception as e:
+        logger.error(f"fetch_hackernews_top failed: {e}")
         return []
 
 
@@ -101,6 +112,8 @@ def fetch_youtube_channel(channel_id: str, limit: int = 10) -> List[Dict]:
         session = get_session_for(url)
         resp = session.get(url, headers={"User-Agent": USER_AGENT}, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
+            # FIX #3: Log YouTube errors
+            logger.warning(f"YouTube channel {channel_id} returned {resp.status_code}")
             return []
         feed = feedparser.parse(resp.content)
         items = []
@@ -115,7 +128,9 @@ def fetch_youtube_channel(channel_id: str, limit: int = 10) -> List[Dict]:
                 "created": e.get("published", ""),
             })
         return items
-    except Exception:
+    # FIX #3: Log YouTube fetch errors
+    except Exception as e:
+        logger.error(f"fetch_youtube_channel({channel_id}) failed: {e}")
         return []
 
 
@@ -138,6 +153,8 @@ def fetch_mastodon_trending(instance: str, limit: int = 15) -> List[Dict]:
         session = get_session_for(url)
         resp = session.get(url, headers={"User-Agent": USER_AGENT}, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
+            # FIX #3: Log Mastodon errors
+            logger.warning(f"Mastodon {instance} returned {resp.status_code}")
             return []
         posts = []
         for s in resp.json():
@@ -152,7 +169,9 @@ def fetch_mastodon_trending(instance: str, limit: int = 15) -> List[Dict]:
                 "created": s.get("created_at", ""),
             })
         return posts
-    except Exception:
+    # FIX #3: Log Mastodon errors
+    except Exception as e:
+        logger.error(f"fetch_mastodon_trending({instance}) failed: {e}")
         return []
 
 

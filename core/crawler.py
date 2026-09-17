@@ -1,6 +1,7 @@
 """Page fetcher + change detection helpers."""
 import hashlib
 import time
+import logging
 import warnings
 from typing import Optional, Tuple
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
@@ -8,6 +9,9 @@ from core.config import REQUEST_TIMEOUT, DELAY_BETWEEN_REQUESTS, MAX_CONTENT_LEN
 from core.tor_support import get_session_for, is_onion
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
+# FIX #7: Add logging for truncation
+logger = logging.getLogger(__name__)
 
 
 def clean_html(html: str) -> str:
@@ -42,7 +46,9 @@ def fetch_page(url: str) -> Tuple[Optional[str], Optional[int], Optional[str]]:
         if resp.status_code >= 400:
             return None, resp.status_code, f"HTTP {resp.status_code}"
         text = resp.text
+        # FIX #7: Log truncation instead of silently truncating
         if len(text) > MAX_CONTENT_LENGTH:
+            logger.warning(f"Content truncated for {url[:80]} ({len(text)} chars -> {MAX_CONTENT_LENGTH})")
             text = text[:MAX_CONTENT_LENGTH]
         return clean_html(text), resp.status_code, None
     except Exception as e:

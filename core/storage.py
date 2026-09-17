@@ -68,6 +68,18 @@ def _init_mongo(uri: str = None, db: str = None):
     return _mongo_clients[key][db]
 
 
+# FIX #2: Add explicit cleanup for MongoDB connections to prevent leaks
+def cleanup_mongo():
+    """Close all open MongoDB connections. Call this on shutdown."""
+    global _mongo_clients
+    for key, client in list(_mongo_clients.items()):
+        try:
+            client.close()
+        except Exception as e:
+            print(f"[mongo] cleanup error for {key}: {e}")
+    _mongo_clients.clear()
+
+
 def get_all_mongo_sessions():
     """All configured Mongo DBs (primary + optional second full URL)."""
     sessions = []
