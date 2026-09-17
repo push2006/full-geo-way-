@@ -22,6 +22,7 @@ import feedparser
 logger = logging.getLogger(__name__)
 from core.config import (
     USER_AGENT, REQUEST_TIMEOUT, TREND_SUBREDDITS,
+    ENABLE_REDDIT_TRENDS,
     ENABLE_YOUTUBE_TRENDS, YOUTUBE_CHANNEL_IDS,
     ENABLE_MASTODON_TRENDS, MASTODON_INSTANCES,
     ENABLE_TELEGRAM_TRENDS, TELEGRAM_PUBLIC_CHANNELS,
@@ -36,40 +37,64 @@ DEFAULT_SUBREDDITS = TREND_SUBREDDITS
 
 def fetch_reddit_hot(subreddit: str = "worldnews", limit: int = 15) -> List[Dict]:
     """Fetch hot posts from a subreddit (public JSON, no key needed)."""
-    url = f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}"
-    headers = {"User-Agent": USER_AGENT}
-    try:
-        session = get_session_for(url)
-        resp = session.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
-        if resp.status_code != 200:
-            # FIX #3: Log the error instead of silently failing
-            logger.warning(f"Reddit r/{subreddit} returned {resp.status_code}")
-            return []
-        data = resp.json()
-        posts = []
-        for child in data.get("data", {}).get("children", []):
-            d = child.get("data", {})
-            posts.append({
-                "platform": "Reddit",
-                "source": f"r/{subreddit}",
-                "title": d.get("title", ""),
-                "url": "https://www.reddit.com" + d.get("permalink", ""),
-                "score": d.get("score", 0),
-                "comments": d.get("num_comments", 0),
-                "created": datetime.utcfromtimestamp(d.get("created_utc", 0)).isoformat() if d.get("created_utc") else "",
-            })
-        return posts
-    # FIX #3: Log exceptions instead of silently failing
-    except Exception as e:
-        logger.error(f"fetch_reddit_hot(r/{subreddit}) failed: {e}")
-        return []
+    # Prefer old.reddit.com — less aggressive bot blocking than www
+    urls = [
+        f"https://old.reddit.com/r/{subreddit}/hot.json?limit={limit}",
+        f"https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}",
+    ]
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+    last_status = None
+    for url in urls:
+        try:
+            session = get_session_for(url)
+            resp = session.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+            last_status = resp.status_code
+            if resp.status_code != 200:
+                continue
+            data = resp.json()
+            posts = []
+            for child in data.get("data", {}).get("children", []):
+                d = child.get("data", {})
+                posts.append({
+                    "platform": "Reddit",
+                    "source": f"r/{subreddit}",
+                    "title": d.get("title", ""),
+                    "url": "https://www.reddit.com" + d.get("permalink", ""),
+                    "score": d.get("score", 0),
+                    "comments": d.get("num_comments", 0),
+                    "created": datetime.utcfromtimestamp(d.get("created_utc", 0)).isoformat() if d.get("created_utc") else "",
+                })
+            return posts
+        except Exception as e:
+            logger.debug(f"fetch_reddit_hot(r/{subreddit}) via {url}: {e}")
+            continue
+    # One quiet line per blocked subreddit (not a stack of warnings)
+    if last_status in (401, 403, 429):
+        logger.debug(f"Reddit r/{subreddit} blocked ({last_status}) — skipped")
+    elif last_status:
+        logger.warning(f"Reddit r/{subreddit} returned {last_status}")
+    return []
 
 
 def fetch_all_reddit_trends(subreddits: List[str] = None, limit_per: int = 8) -> List[Dict]:
+    if not ENABLE_REDDIT_TRENDS:
+        return []
     subreddits = subreddits or DEFAULT_SUBREDDITS
     all_posts = []
+    blocked = 0
     for sub in subreddits:
-        all_posts.extend(fetch_reddit_hot(sub, limit=limit_per))
+        posts = fetch_reddit_hot(sub, limit=limit_per)
+        if not posts:
+            blocked += 1
+        all_posts.extend(posts)
+    if blocked and blocked == len(subreddits):
+        print("   ⚠️  Reddit blocked all subreddits (403) — continuing with other sources")
+    elif blocked:
+        print(f"   ⚠️  Reddit: {blocked}/{len(subreddits)} subreddits blocked")
     all_posts.sort(key=lambda x: x.get("score", 0), reverse=True)
     return all_posts
 
@@ -363,8 +388,9 @@ def collect_trends() -> List[Dict]:
     """Collect trends from every enabled platform."""
     results = []
 
-    print("📡 Fetching Reddit trends...")
-    results.extend(fetch_all_reddit_trends())
+    if ENABLE_REDDIT_TRENDS:
+        print("📡 Fetching Reddit trends...")
+        results.extend(fetch_all_reddit_trends())
 
     print("📡 Fetching Hacker News...")
     results.extend(fetch_hackernews_top())

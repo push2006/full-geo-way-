@@ -4,179 +4,224 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GeoWatch Pro</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#05080f; --bg2:#0a101c; --panel:#0e1626; --panel2:#141e31; --elev:#182338;
-  --line:#1a2740; --line2:#243656;
-  --acc:#4f8cff; --acc2:#2dd4bf; --acc-glow:rgba(79,140,255,.25);
+  --bg:#060a12; --panel:#0e1626; --panel2:#141e31; --elev:#1a2438;
+  --line:#1c2a44; --line2:#2a3b5c;
+  --acc:#4f8cff; --acc2:#2dd4bf; --glow:rgba(79,140,255,.28);
   --warn:#fbbf24; --danger:#f87171; --ok:#34d399; --violet:#c4b5fd;
   --text:#eef3fb; --dim:#8b9bb8; --muted:#5c6d8a;
-  --r:14px; --font:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --r:12px; --font:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --shadow:0 8px 28px rgba(0,0,0,.32);
 }
 html[data-theme="light"]{
-  --bg:#f0f3f9; --bg2:#e6ebf5; --panel:#ffffff; --panel2:#f5f7fc; --elev:#eef1f8;
+  --bg:#eef2f8; --panel:#fff; --panel2:#f5f7fc; --elev:#e8edf7;
   --line:#d0d9ea; --line2:#b7c4db;
-  --acc:#2563eb; --acc2:#0d9488; --acc-glow:rgba(37,99,235,.15);
+  --acc:#2563eb; --acc2:#0d9488; --glow:rgba(37,99,235,.16);
   --text:#0f172a; --dim:#475569; --muted:#64748b;
+  --shadow:0 8px 28px rgba(15,23,42,.08);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:var(--font); font-size:14px; color:var(--text); line-height:1.5;
+  font-family:var(--font); font-size:13px; color:var(--text); line-height:1.45;
   background:
-    radial-gradient(900px 420px at 8% -8%, rgba(79,140,255,.12), transparent 55%),
-    radial-gradient(700px 380px at 100% 0%, rgba(45,212,191,.07), transparent 50%),
+    radial-gradient(900px 420px at 5% -8%, rgba(79,140,255,.12), transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, rgba(45,212,191,.07), transparent 50%),
     var(--bg);
   min-height:100vh;
 }
 a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
-button{
-  font-family:var(--font); cursor:pointer; border-radius:10px; border:1px solid var(--line);
-  background:var(--panel2); color:var(--text); padding:8px 14px; font-size:13px; font-weight:500;
-  transition:border-color .15s, background .15s, transform .1s, box-shadow .15s;
+button,.btn{
+  font-family:var(--font); cursor:pointer; border-radius:9px; border:1px solid var(--line);
+  background:var(--panel2); color:var(--text); padding:7px 12px; font-size:12px; font-weight:500;
+  transition:.15s; display:inline-flex; align-items:center; gap:5px;
 }
-button:hover{border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-glow)}
+button:hover{border-color:var(--acc); box-shadow:0 0 0 3px var(--glow)}
 button:active{transform:scale(.98)}
-button.primary{background:linear-gradient(135deg,var(--acc),#3b6fd9); border-color:transparent; color:#fff; font-weight:600}
-button.primary:hover{filter:brightness(1.06)}
-button.chip{border-radius:999px; padding:6px 12px; font-size:12px; background:transparent}
-button.chip.on{background:var(--acc); border-color:var(--acc); color:#fff; box-shadow:0 4px 14px var(--acc-glow)}
-input{
-  width:100%; font-family:var(--font); font-size:13px; color:var(--text);
-  background:var(--elev); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+button.primary{background:linear-gradient(135deg,var(--acc),#3b6fd9); border:0; color:#fff; font-weight:600}
+button.chip{border-radius:999px; padding:5px 11px; font-size:11px; background:transparent; color:var(--dim)}
+button.chip.on{background:rgba(79,140,255,.16); border-color:rgba(79,140,255,.45); color:var(--text); font-weight:600}
+select, input[type=search], input[type=text], input[type=url]{
+  background:var(--elev); border:1px solid var(--line); color:var(--text);
+  border-radius:9px; padding:7px 10px; font:inherit; outline:none;
 }
-input:focus{outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-glow)}
+select:focus, input:focus{border-color:var(--acc); box-shadow:0 0 0 3px var(--glow)}
 input::placeholder{color:var(--muted)}
+select{cursor:pointer}
 
-/* Shell */
-.shell{display:grid; grid-template-columns:220px 1fr; min-height:100vh}
+.shell{display:grid; grid-template-columns:210px 1fr; min-height:100vh}
 @media(max-width:900px){.shell{grid-template-columns:1fr}}
-
-/* Sidebar */
 .side{
-  background:rgba(10,16,28,.92); border-right:1px solid var(--line);
-  padding:18px 14px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:18px;
-  backdrop-filter:blur(12px);
+  background:rgba(10,16,28,.95); border-right:1px solid var(--line);
+  padding:16px 12px; position:sticky; top:0; height:100vh;
+  display:flex; flex-direction:column; gap:14px; backdrop-filter:blur(12px); z-index:30;
 }
-html[data-theme="light"] .side{background:rgba(255,255,255,.95)}
-@media(max-width:900px){
-  .side{position:relative; height:auto; border-right:0; border-bottom:1px solid var(--line)}
-}
-.brand{display:flex; gap:10px; align-items:center; padding:4px 6px}
+html[data-theme="light"] .side{background:rgba(255,255,255,.97)}
+@media(max-width:900px){.side{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line)}}
+.brand{display:flex; gap:9px; align-items:center; padding:2px 4px}
 .logo{
-  width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
-  font-weight:700; font-size:13px; color:#fff;
-  background:linear-gradient(145deg,var(--acc),var(--acc2));
-  box-shadow:0 8px 20px var(--acc-glow);
+  width:36px; height:36px; border-radius:10px; display:grid; place-items:center;
+  font-weight:700; font-size:12px; color:#fff;
+  background:linear-gradient(145deg,var(--acc),var(--acc2)); box-shadow:0 6px 18px var(--glow);
 }
-.brand h1{font-size:15px; font-weight:700; letter-spacing:-.02em}
-.brand h1 small{display:block; font-size:11px; color:var(--dim); font-weight:400; margin-top:1px}
-.nav{display:flex; flex-direction:column; gap:4px}
+.brand h1{font-size:14px; font-weight:700; letter-spacing:-.02em}
+.brand h1 small{display:block; font-size:10px; color:var(--dim); font-weight:400; margin-top:1px}
+.nav{display:flex; flex-direction:column; gap:3px}
 .nav .tab{
-  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
-  color:var(--dim); cursor:pointer; font-weight:500; font-size:13px; user-select:none;
-  border:1px solid transparent;
+  display:flex; align-items:center; gap:9px; padding:9px 10px; border-radius:10px;
+  color:var(--dim); cursor:pointer; font-weight:500; font-size:12px; user-select:none;
+  border:1px solid transparent; transition:.15s;
 }
 .nav .tab:hover{background:var(--panel2); color:var(--text)}
-.nav .tab.on{background:linear-gradient(135deg,rgba(79,140,255,.18),rgba(45,212,191,.08));
-  color:var(--text); border-color:rgba(79,140,255,.25)}
-.nav .tab .ico{width:18px; text-align:center; opacity:.9}
-.side-foot{margin-top:auto; display:flex; flex-direction:column; gap:8px}
-.side-foot .meta{font-size:11px; color:var(--muted); padding:0 8px; font-family:var(--mono)}
+.nav .tab.on{
+  background:linear-gradient(135deg,rgba(79,140,255,.2),rgba(45,212,191,.08));
+  color:var(--text); border-color:rgba(79,140,255,.28);
+}
+.nav .tab .ico{width:16px; text-align:center}
+.side-foot{margin-top:auto; display:flex; flex-direction:column; gap:7px}
+.side-foot .meta{font-size:10px; color:var(--muted); padding:0 6px; font-family:var(--mono)}
 
-/* Main */
-.main{padding:18px 20px 40px; max-width:1100px}
-.topbar{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
-.topbar h2{font-size:18px; font-weight:700; letter-spacing:-.02em}
-.actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-#refresh-note{font-size:12px; color:var(--muted); font-family:var(--mono)}
-.pulse{width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 0 rgba(52,211,153,.5); animation:pulse 2s infinite}
+.main{padding:14px 18px 40px; max-width:1280px; width:100%}
+.topbar{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px}
+.topbar h2{font-size:18px; font-weight:700; letter-spacing:-.03em}
+.actions{display:flex; gap:7px; align-items:center; flex-wrap:wrap}
+#refresh-note{font-size:11px; color:var(--muted); font-family:var(--mono)}
+.pulse{width:8px; height:8px; border-radius:50%; background:var(--ok); animation:pulse 2s infinite}
 .pulse.off{background:var(--muted); animation:none}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.45)}70%{box-shadow:0 0 0 10px transparent}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}70%{box-shadow:0 0 0 9px transparent}}
 
-/* Status + stats */
-.status-bar{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px}
+.status-bar{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px}
 .pill{
-  font-size:11px; color:var(--dim); background:var(--panel); border:1px solid var(--line);
-  border-radius:999px; padding:6px 11px; font-family:var(--mono);
+  display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px;
+  background:var(--panel); border:1px solid var(--line); font-size:11px; color:var(--dim);
 }
 .pill b{color:var(--text); font-weight:600}
-.pill.on{border-color:rgba(52,211,153,.35); color:#6ee7b7}
-.pill.off{opacity:.65}
-.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:18px}
-@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}}
+.pill.on{border-color:rgba(52,211,153,.4); color:var(--ok)}
+.pill.err{border-color:rgba(248,113,113,.35); color:var(--danger)}
+
+.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px}
+@media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
 .stat{
   background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
-  padding:14px 16px; position:relative; overflow:hidden;
+  padding:12px 14px; box-shadow:var(--shadow);
 }
-.stat::before{
-  content:""; position:absolute; inset:0 auto auto 0; width:100%; height:2px;
-  background:linear-gradient(90deg,var(--acc),var(--acc2)); opacity:.7;
+.stat .label{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:600}
+.stat .val{font-size:22px; font-weight:700; margin-top:2px; font-family:var(--mono); letter-spacing:-.03em}
+.stat .sub{font-size:10px; color:var(--dim); margin-top:1px}
+
+.panel{display:none}
+.panel.on{display:block}
+
+.toolbar{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px;
+  padding:8px 10px; background:var(--panel); border:1px solid var(--line); border-radius:11px;
 }
-.stat .n{font-size:26px; font-weight:700; letter-spacing:-.03em; font-family:var(--mono)}
-.stat .n.a{color:var(--acc)} .stat .n.c{color:var(--acc2)} .stat .n.o{color:var(--ok)} .stat .n.w{color:var(--warn)}
-.stat .l{font-size:11px; color:var(--dim); margin-top:4px; text-transform:uppercase; letter-spacing:.04em}
+.toolbar .filters{display:flex; flex-wrap:wrap; gap:5px; align-items:center}
+.toolbar .count{margin-left:auto; font-size:11px; color:var(--muted); font-family:var(--mono)}
+.toolbar input[type=search]{flex:1; min-width:120px}
+.toolbar select{font-size:11px; padding:6px 8px}
 
-.panel{display:none} .panel.on{display:block; animation:in .2s ease}
-@keyframes in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+.mini-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin-bottom:12px}
+.mini-stat{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+}
+.mini-stat .n{font-size:18px; font-weight:700; font-family:var(--mono)}
+.mini-stat .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-top:2px}
 
-.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px}
-.toolbar input{max-width:260px; flex:1}
-.filters{display:flex; gap:6px; flex-wrap:wrap}
-.count{margin-left:auto; font-size:12px; color:var(--muted); font-family:var(--mono)}
-
-.card{
+.grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px}
+.tile{
   background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
-  padding:13px 15px; margin-bottom:8px; transition:border-color .15s, box-shadow .15s;
+  padding:12px; display:flex; flex-direction:column; gap:6px;
+  min-height:140px; max-height:200px; transition:border-color .15s, box-shadow .15s;
+  box-shadow:var(--shadow);
 }
-.card:hover{border-color:var(--line2); box-shadow:0 8px 24px rgba(0,0,0,.18)}
-.card .t{font-weight:600; margin-bottom:6px; line-height:1.35; font-size:14px}
-.card .m{display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; color:var(--dim)}
-.preview{margin-top:8px; color:var(--dim); font-size:13px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.tile:hover{border-color:var(--line2)}
+.tile .t{font-weight:600; font-size:13px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.tile .m{display:flex; flex-wrap:wrap; gap:5px; align-items:center; font-size:10px; color:var(--dim)}
+.tile .preview{font-size:11px; color:var(--dim); line-height:1.4; flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+.tile .foot{display:flex; justify-content:space-between; align-items:center; margin-top:auto; font-size:10px; color:var(--muted)}
+
+.list .row{
+  background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  padding:10px 12px; margin-bottom:7px; transition:border-color .15s;
+  display:grid; grid-template-columns:1fr auto; gap:8px; align-items:start;
+}
+.list .row:hover{border-color:var(--line2)}
+.list .row .t{font-weight:600; font-size:13px; margin-bottom:4px}
+.list .row .m{display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:11px; color:var(--dim)}
+.list .row .preview{font-size:12px; color:var(--dim); margin-top:4px; grid-column:1/-1}
+.list .row .side-meta{text-align:right; font-size:10px; color:var(--muted); font-family:var(--mono); white-space:nowrap}
+
+/* Changes timeline */
+.timeline{position:relative; padding-left:18px}
+.timeline::before{content:''; position:absolute; left:5px; top:4px; bottom:4px; width:2px; background:var(--line)}
+.timeline .row{position:relative}
+.timeline .row::before{
+  content:''; position:absolute; left:-15px; top:14px; width:8px; height:8px; border-radius:50%;
+  background:var(--warn); border:2px solid var(--panel); box-shadow:0 0 0 2px rgba(251,191,36,.35);
+}
 
 .tag{
-  display:inline-flex; align-items:center; border-radius:999px; padding:2px 8px;
-  border:1px solid var(--line2); background:var(--elev); color:var(--acc2); font-size:10px;
-  font-weight:500; letter-spacing:.02em; text-transform:uppercase;
+  display:inline-block; padding:1px 7px; border-radius:5px; font-size:10px; font-weight:500;
+  background:var(--elev); border:1px solid var(--line); color:var(--dim);
 }
-.tag.crit{color:#fecaca; border-color:rgba(248,113,113,.4); background:rgba(248,113,113,.1)}
-.tag.brics{color:#ddd6fe; border-color:rgba(196,181,253,.4); background:rgba(196,181,253,.1)}
-.tag.ok{color:#a7f3d0; border-color:rgba(52,211,153,.35); background:rgba(52,211,153,.1)}
-.tag.warn{color:#fde68a; border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.1)}
-.score{font-family:var(--mono); color:var(--warn); font-weight:600}
+.tag.ok{color:var(--ok); border-color:rgba(52,211,153,.35)}
+.tag.warn{color:var(--warn); border-color:rgba(251,191,36,.35)}
+.tag.crit{color:var(--danger); border-color:rgba(248,113,113,.4); background:rgba(248,113,113,.08)}
+.tag.brics{color:var(--violet); border-color:rgba(196,181,253,.4)}
+.tag.rss{color:var(--acc)}
+.tag.page{color:var(--acc2)}
+.score{font-family:var(--mono); font-size:10px; font-weight:600; color:var(--acc2); background:rgba(45,212,191,.1); padding:1px 6px; border-radius:5px}
 
-.empty,.error{text-align:center; padding:48px 20px; color:var(--muted)}
+.bar-row{display:grid; grid-template-columns:120px 1fr 40px; gap:8px; align-items:center; margin:5px 0}
+.bar-label{font-size:11px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.bar-track{height:8px; background:var(--elev); border-radius:99px; overflow:hidden}
+.bar-fill{height:100%; background:linear-gradient(90deg,var(--acc),var(--acc2)); border-radius:99px; min-width:2px}
+.bar-count{font-size:10px; color:var(--muted); font-family:var(--mono); text-align:right}
+
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.card-block{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:14px; margin-bottom:10px; box-shadow:var(--shadow)}
+.card-block .t{font-weight:600; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center}
+
+.empty,.error{text-align:center; padding:36px 16px; color:var(--muted)}
 .error{color:var(--danger); border:1px solid rgba(248,113,113,.3); border-radius:var(--r); background:rgba(248,113,113,.06)}
 
-.bar-row{display:flex; align-items:center; gap:8px; margin:8px 0; font-size:12px}
-.bar-label{width:110px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.bar-track{flex:1; height:10px; background:var(--elev); border-radius:6px; overflow:hidden}
-.bar-fill{height:100%; background:linear-gradient(90deg,var(--acc),var(--acc2)); border-radius:6px}
-.bar-count{width:36px; text-align:right; color:var(--dim); font-family:var(--mono)}
-.two{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-@media(max-width:800px){.two{grid-template-columns:1fr}}
-
-.stream-form{
-  display:grid; grid-template-columns:1fr 1fr 2fr auto; gap:8px; margin-bottom:14px;
-  background:var(--panel); border:1px solid var(--line); border-radius:var(--r); padding:14px;
+.map-wrap{
+  height:440px; border-radius:var(--r); overflow:hidden; border:1px solid var(--line);
+  background:var(--panel); position:relative; box-shadow:var(--shadow);
 }
-.stream-form .hint{grid-column:1/-1; font-size:12px; color:var(--dim)}
-.stream-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px}
-.stream-card{position:relative; margin:0}
-.stream-card .rm{
-  position:absolute; top:10px; right:10px; z-index:2; font-size:11px; padding:4px 8px;
-  background:rgba(0,0,0,.75); color:#fecaca; border:1px solid rgba(248,113,113,.4);
+#map{width:100%; height:100%; background:#0a101c}
+.map-legend{
+  position:absolute; bottom:10px; left:10px; z-index:500;
+  background:rgba(14,22,38,.92); border:1px solid var(--line); border-radius:8px;
+  padding:6px 10px; font-size:10px; color:var(--dim); max-width:200px;
 }
-.stream-card iframe{width:100%; height:220px; border:0; border-radius:10px; margin-top:8px; background:#000}
-@media(max-width:720px){.stream-form{grid-template-columns:1fr}.toolbar input{max-width:none}}
-.map-wrap{height:420px;border-radius:var(--r);border:1px solid var(--line);overflow:hidden;background:var(--elev)}
-#map{height:100%;width:100%}
-.leaflet-container{background:var(--elev);font-family:var(--font)}
+html[data-theme="light"] .map-legend{background:rgba(255,255,255,.94)}
+.map-controls{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px}
 
+.stream-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px}
+.stream-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow)}
+.stream-card iframe{width:100%; height:170px; border:0; display:block; background:#000}
+.stream-card .meta{padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:6px}
+.stream-form{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px; padding:12px; background:var(--panel); border:1px solid var(--line); border-radius:11px}
+.stream-form input{flex:1; min-width:100px}
+
+.toast{
+  position:fixed; bottom:20px; right:20px; z-index:9999;
+  background:var(--panel); border:1px solid var(--line); border-radius:11px;
+  padding:10px 16px; box-shadow:var(--shadow); font-size:12px;
+  transform:translateY(100px); opacity:0; transition:.25s;
+}
+.toast.show{transform:translateY(0); opacity:1}
+.toast.ok{border-color:rgba(52,211,153,.4)}
+.toast.err{border-color:rgba(248,113,113,.4)}
+.leaflet-popup-content-wrapper{background:var(--panel)!important; color:var(--text)!important; border-radius:9px!important}
+.leaflet-popup-tip{background:var(--panel)!important}
 </style>
 </head>
 <body>
@@ -184,20 +229,20 @@ html[data-theme="light"] .side{background:rgba(255,255,255,.95)}
   <aside class="side">
     <div class="brand">
       <div class="logo">GW</div>
-      <h1>GeoWatch<small>intelligence monitor</small></h1>
+      <h1>GeoWatch<small>intel monitor</small></h1>
     </div>
-    <nav class="nav">
+    <nav class="nav" id="nav">
       <div class="tab on" data-tab="content"><span class="ico">◉</span> Feed</div>
       <div class="tab" data-tab="sources"><span class="ico">◎</span> Sources</div>
       <div class="tab" data-tab="changes"><span class="ico">△</span> Changes</div>
       <div class="tab" data-tab="breakdown"><span class="ico">▦</span> Breakdown</div>
       <div class="tab" data-tab="weekly"><span class="ico">▣</span> Weekly</div>
       <div class="tab" data-tab="map"><span class="ico">🌐</span> Map</div>
-      <div class="tab" data-tab="streams"><span class="ico">▶</span> Live Streams</div>
+      <div class="tab" data-tab="streams"><span class="ico">▶</span> Streams</div>
     </nav>
     <div class="side-foot">
       <div class="meta" id="side-status">collector —</div>
-      <button onclick="toggleTheme()">◐ Theme</button>
+      <button type="button" id="btn-theme">◐ Theme</button>
     </div>
   </aside>
 
@@ -205,245 +250,594 @@ html[data-theme="light"] .side{background:rgba(255,255,255,.95)}
     <div class="topbar">
       <h2 id="page-title">Feed</h2>
       <div class="actions">
-        <span id="pulse" class="pulse"></span>
+        <span id="pulse" class="pulse" title="Collector"></span>
         <span id="refresh-note">—</span>
-        <label style="display:flex;gap:6px;align-items:center;color:var(--dim);font-size:12px">
+        <label style="display:flex;gap:5px;align-items:center;color:var(--dim);font-size:11px;cursor:pointer">
           <input type="checkbox" id="auto-refresh" checked style="width:auto"> Auto
         </label>
-        <button onclick="exportJson()">⬇ Export</button>
-        <button onclick="loadAll()">↻ Refresh</button>
+        <button type="button" id="btn-export">⬇ Export</button>
+        <button type="button" class="primary" id="btn-refresh">↻ Refresh</button>
       </div>
     </div>
-
     <div class="status-bar" id="status-bar"></div>
-    <div class="stats" id="stats"></div>
-
-    <div class="panel on" id="panel-content"><div class="empty">Loading feed…</div></div>
-    <div class="panel" id="panel-sources"><div class="empty">Loading…</div></div>
-    <div class="panel" id="panel-changes"><div class="empty">Loading…</div></div>
-    <div class="panel" id="panel-breakdown"><div class="empty">Loading…</div></div>
-    <div class="panel" id="panel-weekly"><div class="empty">Loading…</div></div>
-    <div class="panel" id="panel-map"><div class="empty">Loading map…</div></div>
-    <div class="panel" id="panel-streams"><div class="empty">Loading…</div></div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="label">Sources</div><div class="val">—</div></div>
+      <div class="stat"><div class="label">Feed</div><div class="val">—</div></div>
+      <div class="stat"><div class="label">Changes</div><div class="val">—</div></div>
+      <div class="stat"><div class="label">Categories</div><div class="val">—</div></div>
+    </div>
+    <div class="panel on" id="panel-content"></div>
+    <div class="panel" id="panel-sources"></div>
+    <div class="panel" id="panel-changes"></div>
+    <div class="panel" id="panel-breakdown"></div>
+    <div class="panel" id="panel-weekly"></div>
+    <div class="panel" id="panel-map">
+      <div class="map-controls" id="map-controls"></div>
+      <div class="map-wrap"><div id="map"></div><div class="map-legend" id="map-legend">Free map · no API key</div></div>
+      <div id="map-side" style="margin-top:12px"></div>
+    </div>
+    <div class="panel" id="panel-streams"></div>
   </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
-const $=id=>document.getElementById(id);
-const titles={content:'Feed',sources:'Sources',changes:'Changes',breakdown:'Breakdown',weekly:'Weekly',map:'Map',streams:'Live Streams'};
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const short=(s,n=160)=>{s=String(s||'');return s.length>n?s.slice(0,n-1)+'…':s};
-const timeAgo=iso=>{if(!iso)return '';const t=new Date(iso).getTime();if(isNaN(t))return esc(String(iso));
-  const d=Math.max(0,(Date.now()-t)/1000);if(d<60)return Math.floor(d)+'s';if(d<3600)return Math.floor(d/60)+'m';
-  if(d<86400)return Math.floor(d/3600)+'h';return Math.floor(d/86400)+'d'};
-async function fetchJSON(u){const r=await fetch(u);if(!r.ok)throw new Error(u+' → '+r.status);return r.json()}
-function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='dark'?'light':'dark');localStorage.setItem('gw-theme',h.getAttribute('data-theme'))}
-(function(){const s=localStorage.getItem('gw-theme');if(s)document.documentElement.setAttribute('data-theme',s)})();
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const titles = {content:'Feed',sources:'Sources',changes:'Changes',breakdown:'Breakdown',weekly:'Weekly report',map:'World map',streams:'Live streams'};
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short = (s,n=120) => { s=String(s||''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+const timeAgo = iso => {
+  if(!iso) return '';
+  const t=new Date(iso).getTime(); if(isNaN(t)) return '';
+  const d=Math.max(0,(Date.now()-t)/1000);
+  if(d<60) return Math.floor(d)+'s';
+  if(d<3600) return Math.floor(d/60)+'m';
+  if(d<86400) return Math.floor(d/3600)+'h';
+  return Math.floor(d/86400)+'d';
+};
+const ts = iso => { const t=new Date(iso).getTime(); return isNaN(t)?0:t; };
 
-document.querySelectorAll('.nav .tab').forEach(t=>t.addEventListener('click',()=>{
-  document.querySelectorAll('.nav .tab').forEach(x=>x.classList.remove('on'));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
-  t.classList.add('on'); $('panel-'+t.dataset.tab).classList.add('on');
-  $('page-title').textContent=titles[t.dataset.tab]||'GeoWatch';
-}));
+async function fetchJSON(u){
+  const r=await fetch(u);
+  if(!r.ok) throw new Error(u+' → '+r.status);
+  return r.json();
+}
+function toast(msg, kind){
+  const el=$('toast'); el.textContent=msg; el.className='toast show '+(kind||'');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove('show'),2600);
+}
 
-let CACHE={content:[],sources:[],changes:[],contentTotal:0,contentHasMore:false};
-let FILTER='all'; let CONTENT_SKIP=0; const CONTENT_PAGE=100;
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(_) { return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(_) {} }
+};
+function toggleTheme(){
+  const h=document.documentElement;
+  const next=h.getAttribute('data-theme')==='dark'?'light':'dark';
+  h.setAttribute('data-theme',next); store.set('gw-theme',next);
+  if(mapInst){ try{ mapInst.remove(); }catch(_){ } mapInst=null; if(activeTab==='map') setTimeout(ensureMap,80); }
+}
+(function(){ const s=store.get('gw-theme'); if(s) document.documentElement.setAttribute('data-theme',s); })();
+
+let activeTab='content';
+function switchTab(tab){
+  activeTab=tab;
+  document.querySelectorAll('.nav .tab').forEach(x=>x.classList.toggle('on', x.dataset.tab===tab));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('on', x.id==='panel-'+tab));
+  $('page-title').textContent=titles[tab]||'GeoWatch';
+  if(tab==='map') setTimeout(()=>{ ensureMap(); if(mapInst) mapInst.invalidateSize(); },50);
+  if(tab==='sources') loadSources();
+  if(tab==='changes') loadChanges();
+  if(tab==='breakdown') loadBreakdown();
+  if(tab==='weekly') loadWeekly();
+  if(tab==='streams') loadStreams();
+}
+
+const CACHE={content:[],sources:[],changes:[],contentTotal:0,contentHasMore:false,points:[],chokepoints:[],summary:null,weekly:null};
+let FILTER='all', SOURCE_FILTER='healthy', SOURCE_TYPE='all', SORT='newest', SRC_SORT='name', CHG_SORT='newest', MAP_MODE='regions';
+let CONTENT_SKIP=0; const CONTENT_PAGE=120;
+let mapInst=null;
+
+function isCritical(it){
+  if(it.critical) return true;
+  const b=[it.title,it.name,it.content_preview,it.category].join(' ').toLowerCase();
+  return /sanction|invasion|missile|nuclear|ceasefire|airstrike|martial law|escalation/.test(b);
+}
+function isBrics(it){
+  if(it.brics) return true;
+  const b=[it.title,it.name,it.content_preview,it.category].join(' ').toLowerCase();
+  return /brics|new development bank|global south/.test(b);
+}
+function hasErr(it){ return !!(it.error||it.error_message); }
+function sourceType(it){
+  const t=(it.source_type||it.platform||'').toLowerCase();
+  if(t.includes('rss')||(it.url||'').includes('rss')||(it.url||'').includes('feed')) return 'rss';
+  if(t.includes('trend')||/reddit|hacker|youtube|mastodon/.test(t)) return 'trend';
+  if(t.includes('onion')) return 'onion';
+  return 'page';
+}
+
+function sortItems(items, mode){
+  const arr=items.slice();
+  if(mode==='newest') arr.sort((a,b)=> ts(b.updated_at||b.last_changed||b.last_checked||b.detected_at) - ts(a.updated_at||a.last_changed||a.last_checked||a.detected_at));
+  else if(mode==='oldest') arr.sort((a,b)=> ts(a.updated_at||a.last_changed||a.last_checked||a.detected_at) - ts(b.updated_at||b.last_changed||b.last_checked||b.detected_at));
+  else if(mode==='score') arr.sort((a,b)=> (b.score||0)-(a.score||0));
+  else if(mode==='title') arr.sort((a,b)=> String(a.title||a.name||'').localeCompare(String(b.title||b.name||'')));
+  else if(mode==='category') arr.sort((a,b)=> String(a.category||'').localeCompare(String(b.category||'')));
+  else if(mode==='name') arr.sort((a,b)=> String(a.name||a.title||'').localeCompare(String(b.name||b.title||'')));
+  else if(mode==='status') arr.sort((a,b)=> (b.last_status||0)-(a.last_status||0));
+  else if(mode==='type') arr.sort((a,b)=> sourceType(a).localeCompare(sourceType(b)));
+  return arr;
+}
 
 async function loadStatus(){
   try{
-    const s=await fetchJSON('/api/status'); const f=s.features||{};
-    const run=!!s.running; $('pulse').className='pulse'+(run?'':' off');
-    $('side-status').textContent=(run?'live':'idle')+' · cycle #'+(s.last_cycle_num||0);
-    $('status-bar').innerHTML=`
-      <span class="pill ${run?'on':''}"><b>${run?'Collector live':'Idle'}</b></span>
-      <span class="pill">#${s.last_cycle_num||0} · ${s.last_cycle_at?timeAgo(s.last_cycle_at)+' ago':'—'}</span>
-      <span class="pill">Δ ${s.last_changed??0} · err ${s.last_errors??0} · ${s.last_duration_sec??0}s</span>
-      <span class="pill ${f.gnews?'on':'off'}">GNews</span>
-      <span class="pill ${f.sanctions?'on':'off'}">OFAC</span>
-      <span class="pill ${f.tor?'on':'off'}">Tor</span>
-      <span class="pill">DB ${esc(f.storage||'sqlite')}${f.mongo_targets?` ×${f.mongo_targets}`:''}</span>`;
-  }catch(e){$('status-bar').innerHTML='<span class="pill">Status offline</span>'}
+    const s=await fetchJSON('/api/status'); const f=s.features||{}; const run=!!s.running;
+    $('pulse').className='pulse'+(run?'':' off');
+    $('side-status').textContent=(run?'live':'idle')+' · #'+(s.last_cycle_num||0);
+    const errN=s.last_errors??0;
+    $('status-bar').innerHTML=
+      `<span class="pill ${run?'on':''}"><b>${run?'Live':'Idle'}</b></span>`+
+      `<span class="pill">#${s.last_cycle_num||0} · ${s.last_cycle_at?timeAgo(s.last_cycle_at)+' ago':'—'}</span>`+
+      `<span class="pill">Δ ${s.last_changed??0}</span>`+
+      `<span class="pill ${errN>0?'err':''}">err ${errN}</span>`+
+      `<span class="pill ${f.gnews?'on':''}">GNews</span>`+
+      `<span class="pill ${f.sanctions?'on':''}">OFAC</span>`+
+      `<span class="pill">DB ${esc(f.storage||'sqlite')}</span>`;
+  }catch(_){ $('status-bar').innerHTML='<span class="pill">Status offline</span>'; }
 }
-
 async function loadStats(){
   try{
     const s=await fetchJSON('/api/summary');
-    const plats=Object.keys(s.by_platform||{}).length, cats=Object.keys(s.by_category||{}).length;
-    $('stats').innerHTML=`
-      <div class="stat"><div class="n a">${s.total_sources??0}</div><div class="l">Items</div></div>
-      <div class="stat"><div class="n c">${s.total_changes_logged??0}</div><div class="l">Changes</div></div>
-      <div class="stat"><div class="n o">${plats}</div><div class="l">Platforms</div></div>
-      <div class="stat"><div class="n w">${cats}</div><div class="l">Categories</div></div>`;
-  }catch(e){$('stats').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+    CACHE.summary=s;
+    const cats=Object.keys(s.by_category||{}).length;
+    $('stats').innerHTML=
+      `<div class="stat"><div class="label">Sources</div><div class="val">${s.total_sources??0}</div><div class="sub">configured</div></div>`+
+      `<div class="stat"><div class="label">Feed</div><div class="val" id="stat-items">${CACHE.contentTotal||'—'}</div><div class="sub">with content</div></div>`+
+      `<div class="stat"><div class="label">Changes</div><div class="val">${s.total_changes_logged??0}</div><div class="sub">deltas</div></div>`+
+      `<div class="stat"><div class="label">Categories</div><div class="val">${cats}</div><div class="sub">buckets</div></div>`;
+  }catch(e){ $('stats').innerHTML=`<div class="error" style="grid-column:1/-1">${esc(e.message)}</div>`; }
 }
 
-function isCritical(it){if(it.critical)return true;const b=[it.title,it.name,it.content_preview,it.category].join(' ').toLowerCase();return /sanction|invasion|missile|nuclear|ceasefire|airstrike|martial law/.test(b)}
-function isBrics(it){if(it.brics)return true;const b=[it.title,it.name,it.content_preview,it.category].join(' ').toLowerCase();return /brics|new development bank|global south/.test(b)}
-
+/* ===== FEED ===== */
 function renderContent(){
-  const el=$('panel-content'); const q=($('q-content')?.value||'').toLowerCase().trim();
+  const el=$('panel-content'); if(!el) return;
   let items=CACHE.content||[];
-  if(FILTER==='critical')items=items.filter(isCritical);
-  if(FILTER==='brics')items=items.filter(isBrics);
-  if(FILTER==='high')items=items.filter(it=>(it.score||0)>=5);
-  if(q)items=items.filter(it=>[it.title,it.name,it.category,it.platform,it.content_preview,it.url].join(' ').toLowerCase().includes(q));
-  const rows=items.slice(0,500).map(it=>{
+  if(FILTER==='critical') items=items.filter(isCritical);
+  if(FILTER==='brics') items=items.filter(isBrics);
+  if(FILTER==='high') items=items.filter(it=>(it.score||0)>=5);
+  if(FILTER==='rss') items=items.filter(it=>sourceType(it)==='rss');
+  if(FILTER==='trend') items=items.filter(it=>sourceType(it)==='trend');
+  const qEl=$('q-content'); const q=(qEl&&qEl.value||'').toLowerCase().trim();
+  if(q) items=items.filter(it=>[it.title,it.name,it.category,it.platform,it.content_preview,it.url].join(' ').toLowerCase().includes(q));
+  items=sortItems(items, SORT);
+  const tiles=items.slice(0,600).map(it=>{
     const title=it.title||it.name||it.url||'Untitled';
     const preview=it.content_preview||it.content||'';
-    const tags=[it.category&&`<span class="tag">${esc(it.category)}</span>`,it.platform&&`<span class="tag">${esc(it.platform)}</span>`,
-      it.source_type&&`<span class="tag">${esc(it.source_type)}</span>`,isCritical(it)&&`<span class="tag crit">critical</span>`,
-      isBrics(it)&&`<span class="tag brics">brics</span>`,(it.score||0)>0&&`<span class="score">${it.score}</span>`].filter(Boolean).join('');
-    return `<div class="card"><div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(title)}</a></div>
-      <div class="m">${tags}<span>${timeAgo(it.updated_at||it.last_changed||it.last_checked)} ago</span></div>
-      ${preview?`<div class="preview">${esc(short(preview,240))}</div>`:''}</div>`;
+    const tags=[
+      it.category&&`<span class="tag">${esc(it.category)}</span>`,
+      it.platform&&`<span class="tag">${esc(it.platform)}</span>`,
+      isCritical(it)&&`<span class="tag crit">crit</span>`,
+      isBrics(it)&&`<span class="tag brics">brics</span>`,
+      (it.score||0)>0&&`<span class="score">${it.score}</span>`
+    ].filter(Boolean).join('');
+    return `<article class="tile">
+      <div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(title)}</a></div>
+      <div class="m">${tags}</div>
+      ${preview?`<div class="preview">${esc(short(preview,140))}</div>`:''}
+      <div class="foot"><span>${timeAgo(it.updated_at||it.last_changed||it.last_checked)} ago</span>
+        <a href="${esc(it.url||'#')}" target="_blank" rel="noopener">Open →</a></div>
+    </article>`;
   }).join('');
   el.innerHTML=`<div class="toolbar">
-    <input id="q-content" placeholder="Search feed…" value="${esc($('q-content')?.value||'')}" oninput="renderContent()">
-    <div class="filters">
-      <button class="chip ${FILTER==='all'?'on':''}" onclick="setFilter('all')">All</button>
-      <button class="chip ${FILTER==='critical'?'on':''}" onclick="setFilter('critical')">Critical</button>
-      <button class="chip ${FILTER==='brics'?'on':''}" onclick="setFilter('brics')">BRICS</button>
-      <button class="chip ${FILTER==='high'?'on':''}" onclick="setFilter('high')">High score</button>
+    <input type="search" id="q-content" placeholder="Search feed…" value="${esc(q)}">
+    <div class="filters" id="feed-filters">
+      <button type="button" class="chip ${FILTER==='all'?'on':''}" data-filter="all">All</button>
+      <button type="button" class="chip ${FILTER==='critical'?'on':''}" data-filter="critical">Critical</button>
+      <button type="button" class="chip ${FILTER==='brics'?'on':''}" data-filter="brics">BRICS</button>
+      <button type="button" class="chip ${FILTER==='high'?'on':''}" data-filter="high">High</button>
+      <button type="button" class="chip ${FILTER==='rss'?'on':''}" data-filter="rss">RSS</button>
+      <button type="button" class="chip ${FILTER==='trend'?'on':''}" data-filter="trend">Trends</button>
     </div>
-    <span class="count">${items.length}${CACHE.contentTotal?` / ${CACHE.contentTotal}`:''}</span>
-  </div>${rows||'<div class="empty">No items — wait for a collection cycle or clear filters.</div>'}
-  ${CACHE.contentHasMore?`<div style="text-align:center;margin:14px 0"><button class="primary" onclick="loadContent(false)">Load more</button></div>`:''}`;
+    <select id="sort-content">
+      <option value="newest" ${SORT==='newest'?'selected':''}>Newest</option>
+      <option value="oldest" ${SORT==='oldest'?'selected':''}>Oldest</option>
+      <option value="score" ${SORT==='score'?'selected':''}>Score ↓</option>
+      <option value="title" ${SORT==='title'?'selected':''}>Title A–Z</option>
+      <option value="category" ${SORT==='category'?'selected':''}>Category</option>
+    </select>
+    <span class="count">${items.length}${CACHE.contentTotal?' / '+CACHE.contentTotal:''}</span>
+  </div>
+  <div class="grid">${tiles||'<div class="empty" style="grid-column:1/-1">No items — wait for a cycle or clear filters.</div>'}</div>
+  ${CACHE.contentHasMore?`<div style="text-align:center;margin:12px 0"><button type="button" class="primary" id="btn-load-more">Load more</button></div>`:''}`;
+  const qi=$('q-content'); if(qi) qi.addEventListener('input',()=>renderContent());
+  const ff=$('feed-filters'); if(ff) ff.addEventListener('click',e=>{
+    const b=e.target.closest('[data-filter]'); if(!b) return; FILTER=b.dataset.filter; renderContent();
+  });
+  const so=$('sort-content'); if(so) so.addEventListener('change',()=>{ SORT=so.value; renderContent(); });
+  const more=$('btn-load-more'); if(more) more.addEventListener('click',()=>loadContent(false));
 }
-function setFilter(f){FILTER=f;renderContent()}
-
-async function loadContent(reset=true){
+async function loadContent(reset){
   try{
-    if(reset){CONTENT_SKIP=0;CACHE.content=[]}
+    if(reset!==false){ CONTENT_SKIP=0; CACHE.content=[]; }
     const data=await fetchJSON('/api/content?limit='+CONTENT_PAGE+'&skip='+CONTENT_SKIP);
     const items=Array.isArray(data)?data:(data.items||[]);
     const total=Array.isArray(data)?items.length:(data.total||items.length);
-    if(reset)CACHE.content=items; else CACHE.content=CACHE.content.concat(items);
-    CACHE.contentTotal=total; CACHE.contentHasMore=Array.isArray(data)?false:!!data.has_more;
-    CONTENT_SKIP=CACHE.content.length; renderContent();
-  }catch(e){$('panel-content').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+    CACHE.contentTotal=total;
+    CACHE.contentHasMore=Array.isArray(data)?false:!!data.has_more;
+    CACHE.content=reset===false?CACHE.content.concat(items):items;
+    CONTENT_SKIP=CACHE.content.length;
+    const si=$('stat-items'); if(si) si.textContent=total;
+    renderContent();
+  }catch(e){ $('panel-content').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
 
+/* ===== SOURCES (upgraded) ===== */
 function renderSources(){
-  const el=$('panel-sources'); const q=($('q-sources')?.value||'').toLowerCase().trim();
-  let items=CACHE.sources||[];
-  if(q)items=items.filter(it=>[it.name,it.url,it.category,it.platform,it.source_type].join(' ').toLowerCase().includes(q));
+  const el=$('panel-sources'); if(!el) return;
+  const all=CACHE.sources||[];
+  const healthy=all.filter(it=>!hasErr(it));
+  const failed=all.filter(it=>hasErr(it));
+  const on=all.filter(it=>it.enabled!==false);
+  const byType={rss:0,page:0,trend:0,onion:0,other:0};
+  all.forEach(it=>{ const t=sourceType(it); byType[t]=(byType[t]||0)+1; });
+
+  let items=SOURCE_FILTER==='healthy'?healthy:SOURCE_FILTER==='failed'?failed:SOURCE_FILTER==='off'?all.filter(it=>it.enabled===false):all;
+  if(SOURCE_TYPE!=='all') items=items.filter(it=>sourceType(it)===SOURCE_TYPE);
+  const qEl=$('q-sources'); const q=(qEl&&qEl.value||'').toLowerCase().trim();
+  if(q) items=items.filter(it=>[it.name,it.url,it.category,it.platform,it.source_type].join(' ').toLowerCase().includes(q));
+  items=sortItems(items, SRC_SORT);
+
   const rows=items.map(it=>{
     const name=it.name||it.title||it.url||'Source';
-    return `<div class="card"><div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(name)}</a></div>
-      <div class="m">${it.enabled!==false?'<span class="tag ok">on</span>':'<span class="tag warn">off</span>'}
-      ${it.category?`<span class="tag">${esc(it.category)}</span>`:''}
-      ${it.source_type?`<span class="tag">${esc(it.source_type)}</span>`:''}
-      <span>${timeAgo(it.last_checked||it.updated_at)} ago</span>
-      ${it.last_status?`<span>HTTP ${esc(it.last_status)}</span>`:''}</div>
-      ${it.error||it.error_message?`<div class="preview" style="color:var(--danger)">${esc(short(it.error||it.error_message,160))}</div>`:''}</div>`;
+    const err=it.error||it.error_message;
+    const st=sourceType(it);
+    return `<div class="row">
+      <div>
+        <div class="t"><a href="${esc(it.url||'#')}" target="_blank" rel="noopener">${esc(name)}</a></div>
+        <div class="m">${it.enabled!==false?'<span class="tag ok">on</span>':'<span class="tag warn">off</span>'}
+          <span class="tag ${st}">${esc(st)}</span>
+          ${it.category?`<span class="tag">${esc(it.category)}</span>`:''}
+          ${it.last_status?`<span>HTTP ${esc(it.last_status)}</span>`:''}
+        </div>
+        ${err&&SOURCE_FILTER!=='healthy'?`<div class="preview" style="color:var(--danger)">${esc(short(err,140))}</div>`:''}
+      </div>
+      <div class="side-meta">${timeAgo(it.last_checked||it.updated_at)||'—'}<br>${(it.score||0)>0?'score '+it.score:''}</div>
+    </div>`;
   }).join('');
-  el.innerHTML=`<div class="toolbar"><input id="q-sources" placeholder="Filter sources…" value="${esc($('q-sources')?.value||'')}" oninput="renderSources()"><span class="count">${items.length}</span></div>${rows||'<div class="empty">No sources yet.</div>'}`;
-}
-async function loadSources(){try{CACHE.sources=await fetchJSON('/api/sites');renderSources()}catch(e){$('panel-sources').innerHTML=`<div class="error">${esc(e.message)}</div>`}}
 
+  el.innerHTML=`
+  <div class="mini-stats">
+    <div class="mini-stat"><div class="n">${all.length}</div><div class="l">Total</div></div>
+    <div class="mini-stat"><div class="n" style="color:var(--ok)">${healthy.length}</div><div class="l">Healthy</div></div>
+    <div class="mini-stat"><div class="n" style="color:var(--danger)">${failed.length}</div><div class="l">Failed</div></div>
+    <div class="mini-stat"><div class="n">${on.length}</div><div class="l">Enabled</div></div>
+    <div class="mini-stat"><div class="n">${byType.rss||0}</div><div class="l">RSS</div></div>
+    <div class="mini-stat"><div class="n">${byType.page||0}</div><div class="l">Pages</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="q-sources" placeholder="Search sources…" value="${esc(q)}">
+    <div class="filters" id="src-filters">
+      <button type="button" class="chip ${SOURCE_FILTER==='healthy'?'on':''}" data-sfilter="healthy">Healthy</button>
+      <button type="button" class="chip ${SOURCE_FILTER==='failed'?'on':''}" data-sfilter="failed">Failed</button>
+      <button type="button" class="chip ${SOURCE_FILTER==='off'?'on':''}" data-sfilter="off">Disabled</button>
+      <button type="button" class="chip ${SOURCE_FILTER==='all'?'on':''}" data-sfilter="all">All</button>
+    </div>
+    <div class="filters" id="src-types">
+      <button type="button" class="chip ${SOURCE_TYPE==='all'?'on':''}" data-stype="all">Any type</button>
+      <button type="button" class="chip ${SOURCE_TYPE==='rss'?'on':''}" data-stype="rss">RSS</button>
+      <button type="button" class="chip ${SOURCE_TYPE==='page'?'on':''}" data-stype="page">Page</button>
+      <button type="button" class="chip ${SOURCE_TYPE==='trend'?'on':''}" data-stype="trend">Trend</button>
+    </div>
+    <select id="sort-src">
+      <option value="name" ${SRC_SORT==='name'?'selected':''}>Name A–Z</option>
+      <option value="newest" ${SRC_SORT==='newest'?'selected':''}>Recently checked</option>
+      <option value="category" ${SRC_SORT==='category'?'selected':''}>Category</option>
+      <option value="type" ${SRC_SORT==='type'?'selected':''}>Type</option>
+      <option value="status" ${SRC_SORT==='status'?'selected':''}>HTTP status</option>
+      <option value="score" ${SRC_SORT==='score'?'selected':''}>Score</option>
+    </select>
+    <span class="count">${items.length}</span>
+  </div>
+  <div class="list">${rows||'<div class="empty">No sources in this filter.</div>'}</div>`;
+
+  const qi=$('q-sources'); if(qi) qi.addEventListener('input',()=>renderSources());
+  const sf=$('src-filters'); if(sf) sf.addEventListener('click',e=>{
+    const b=e.target.closest('[data-sfilter]'); if(!b) return; SOURCE_FILTER=b.dataset.sfilter; renderSources();
+  });
+  const st=$('src-types'); if(st) st.addEventListener('click',e=>{
+    const b=e.target.closest('[data-stype]'); if(!b) return; SOURCE_TYPE=b.dataset.stype; renderSources();
+  });
+  const so=$('sort-src'); if(so) so.addEventListener('change',()=>{ SRC_SORT=so.value; renderSources(); });
+}
+async function loadSources(){
+  try{ CACHE.sources=await fetchJSON('/api/sites'); renderSources(); }
+  catch(e){ $('panel-sources').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
+}
+
+/* ===== CHANGES (timeline) ===== */
+function renderChanges(){
+  const el=$('panel-changes'); if(!el) return;
+  let items=sortItems(CACHE.changes||[], CHG_SORT);
+  const qEl=$('q-changes'); const q=(qEl&&qEl.value||'').toLowerCase().trim();
+  if(q) items=items.filter(c=>[c.title,c.url,c.content_preview].join(' ').toLowerCase().includes(q));
+  const last24=items.filter(c=> Date.now()-ts(c.detected_at) < 86400000).length;
+
+  const rows=items.map(c=>
+    `<div class="row">
+      <div>
+        <div class="t"><a href="${esc(c.url||'#')}" target="_blank" rel="noopener">${esc(c.title||c.url||'Change')}</a></div>
+        <div class="m"><span class="tag warn">changed</span></div>
+        ${c.content_preview?`<div class="preview">${esc(short(c.content_preview,180))}</div>`:''}
+      </div>
+      <div class="side-meta">${timeAgo(c.detected_at)||'—'} ago</div>
+    </div>`
+  ).join('');
+
+  el.innerHTML=`
+  <div class="mini-stats">
+    <div class="mini-stat"><div class="n">${(CACHE.changes||[]).length}</div><div class="l">Logged</div></div>
+    <div class="mini-stat"><div class="n">${last24}</div><div class="l">Last 24h</div></div>
+    <div class="mini-stat"><div class="n">${items.length}</div><div class="l">Showing</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="q-changes" placeholder="Search changes…" value="${esc(q)}">
+    <select id="sort-chg">
+      <option value="newest" ${CHG_SORT==='newest'?'selected':''}>Newest first</option>
+      <option value="oldest" ${CHG_SORT==='oldest'?'selected':''}>Oldest first</option>
+      <option value="title" ${CHG_SORT==='title'?'selected':''}>Title A–Z</option>
+    </select>
+    <span class="count">${items.length}</span>
+  </div>
+  <div class="list timeline">${rows||'<div class="empty">No page changes yet — collector logs deltas here.</div>'}</div>`;
+  const qi=$('q-changes'); if(qi) qi.addEventListener('input',()=>renderChanges());
+  const so=$('sort-chg'); if(so) so.addEventListener('change',()=>{ CHG_SORT=so.value; renderChanges(); });
+}
 async function loadChanges(){
-  try{
-    CACHE.changes=await fetchJSON('/api/changes');
-    const rows=(CACHE.changes||[]).map(c=>`<div class="card"><div class="t"><a href="${esc(c.url||'#')}" target="_blank" rel="noopener">${esc(c.title||c.url||'Change')}</a></div>
-      <div class="m"><span class="tag warn">changed</span><span>${timeAgo(c.detected_at)} ago</span></div>
-      ${c.content_preview?`<div class="preview">${esc(short(c.content_preview,200))}</div>`:''}</div>`).join('');
-    $('panel-changes').innerHTML=rows||'<div class="empty">No changes yet.</div>';
-  }catch(e){$('panel-changes').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+  try{ CACHE.changes=await fetchJSON('/api/changes'); renderChanges(); }
+  catch(e){ $('panel-changes').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
 
+/* ===== BREAKDOWN ===== */
 async function loadBreakdown(){
   try{
-    const s=await fetchJSON('/api/summary');
-    const mk=(obj,title)=>{const e=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...e.map(x=>x[1]));
-      return `<div class="card"><div class="t">${title}</div>${e.map(([k,v])=>`<div class="bar-row"><div class="bar-label" title="${esc(k)}">${esc(k)}</div><div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%"></div></div><div class="bar-count">${v}</div></div>`).join('')||'<div class="empty">No data</div>'}</div>`};
-    $('panel-breakdown').innerHTML=`<div class="two">${mk(s.by_platform,'Platform')}${mk(s.by_category,'Category')}</div>`;
-  }catch(e){$('panel-breakdown').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+    const s=CACHE.summary||await fetchJSON('/api/summary');
+    CACHE.summary=s;
+    const mk=(obj,title,color)=>{
+      const e=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);
+      const max=Math.max(1,...e.map(x=>x[1]));
+      const total=e.reduce((a,[,v])=>a+v,0);
+      return `<div class="card-block"><div class="t"><span>${title}</span><span style="font-size:11px;color:var(--muted);font-weight:400">${total} items</span></div>${
+        e.length?e.map(([k,v])=>`<div class="bar-row"><div class="bar-label" title="${esc(k)}">${esc(k)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%;${color?`background:${color}`:''}"></div></div>
+        <div class="bar-count">${v}</div></div>`).join(''):'<div class="empty" style="padding:12px">No data yet</div>'
+      }</div>`;
+    };
+    const plats=Object.keys(s.by_platform||{}).length;
+    const cats=Object.keys(s.by_category||{}).length;
+    $('panel-breakdown').innerHTML=`
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="n">${s.total_sources??0}</div><div class="l">Sources</div></div>
+        <div class="mini-stat"><div class="n">${s.total_changes_logged??0}</div><div class="l">Changes</div></div>
+        <div class="mini-stat"><div class="n">${plats}</div><div class="l">Platforms</div></div>
+        <div class="mini-stat"><div class="n">${cats}</div><div class="l">Categories</div></div>
+      </div>
+      <div class="two-col">
+        ${mk(s.by_platform,'By platform','linear-gradient(90deg,#4f8cff,#2dd4bf)')}
+        ${mk(s.by_category,'By category','linear-gradient(90deg,#c4b5fd,#4f8cff)')}
+      </div>`;
+  }catch(e){ $('panel-breakdown').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
 
+/* ===== WEEKLY ===== */
 async function loadWeekly(){
   try{
-    const data=await fetchJSON('/api/weekly'); const cats=data.categories||{};
-    const max=Math.max(1,...Object.values(cats).map(Number));
-    const bars=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>`<div class="bar-row"><div class="bar-label">${esc(k)}</div><div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%"></div></div><div class="bar-count">${v}</div></div>`).join('');
-    const top=(data.top||[]).map(a=>`<div class="card"><div class="t"><a href="${esc(a.url||'#')}" target="_blank" rel="noopener">${esc(a.title||a.name||'Article')}</a></div>
-      <div class="m">${a.category?`<span class="tag">${esc(a.category)}</span>`:''}<span class="score">${a.score??0}</span></div></div>`).join('')||'<div class="empty">No weekly data.</div>';
-    $('panel-weekly').innerHTML=`<div class="two"><div class="card"><div class="t">Categories · 7d</div>${bars||'—'}</div><div><div class="t" style="margin-bottom:8px;font-weight:600">Top stories</div>${top}</div></div>`;
-  }catch(e){$('panel-weekly').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+    const data=await fetchJSON('/api/weekly');
+    CACHE.weekly=data;
+    const cats=data.categories||{}; const top=data.top||[];
+    const catEntries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+    const max=Math.max(1,...catEntries.map(x=>x[1]));
+    const total=catEntries.reduce((a,[,v])=>a+v,0);
+    const topHtml=top.map((t,i)=>
+      `<article class="tile" style="min-height:110px;max-height:170px">
+        <div class="m"><span class="score">#${i+1}</span>${t.category?`<span class="tag">${esc(t.category)}</span>`:''}${t.score?`<span class="score">${t.score}</span>`:''}</div>
+        <div class="t"><a href="${esc(t.url||'#')}" target="_blank" rel="noopener">${esc(t.title||t.name||'Item')}</a></div>
+        <div class="foot"><span>${esc(t.platform||'')}</span><a href="${esc(t.url||'#')}" target="_blank" rel="noopener">Open →</a></div>
+      </article>`
+    ).join('')||'<div class="empty" style="grid-column:1/-1">No top stories this week yet — let the collector run.</div>';
+
+    $('panel-weekly').innerHTML=`
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="n">${total}</div><div class="l">Items (7d)</div></div>
+        <div class="mini-stat"><div class="n">${catEntries.length}</div><div class="l">Categories</div></div>
+        <div class="mini-stat"><div class="n">${top.length}</div><div class="l">Top stories</div></div>
+      </div>
+      <div class="card-block">
+        <div class="t">Category activity · last 7 days</div>
+        ${catEntries.length?catEntries.map(([k,v])=>`<div class="bar-row"><div class="bar-label">${esc(k)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%"></div></div>
+        <div class="bar-count">${v}</div></div>`).join(''):'<div class="empty" style="padding:12px">Waiting for weekly data…</div>'}
+      </div>
+      <div style="font-weight:600;margin:14px 0 10px">Top scored stories</div>
+      <div class="grid">${topHtml}</div>`;
+  }catch(e){ $('panel-weekly').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
 
+/* ===== MAP ===== */
+function ensureMap(){
+  const mapEl=$('map'); if(!mapEl) return;
+  if(mapInst){ try{ mapInst.invalidateSize(); }catch(_){ } return; }
+  if(typeof L==='undefined'){ $('map-side').innerHTML='<div class="error">Leaflet failed to load (need internet for map tiles).</div>'; return; }
+  const dark=document.documentElement.getAttribute('data-theme')!=='light';
+  mapInst=L.map('map',{worldCopyJump:true}).setView([20,10],2);
+  L.tileLayer(dark
+    ?'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    :'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {attribution:'&copy; OSM &copy; CARTO', maxZoom:8, subdomains:'abcd'}).addTo(mapInst);
+  drawMapLayers();
+  setTimeout(()=>mapInst.invalidateSize(),100);
+}
+function clearMarkers(){
+  if(!mapInst) return;
+  mapInst.eachLayer(layer=>{ if(layer instanceof L.CircleMarker) mapInst.removeLayer(layer); });
+}
+function drawMapLayers(){
+  if(!mapInst) return;
+  clearMarkers();
+  if(MAP_MODE==='chokepoints' && CACHE.chokepoints.length){
+    CACHE.chokepoints.forEach(cp=>{
+      const lat=cp.lat||cp.latitude; const lon=cp.lon||cp.lng||cp.longitude;
+      if(lat==null||lon==null) return;
+      const mentions=cp.recent_mentions||0;
+      const r=Math.max(7, Math.min(22, 7+mentions*2));
+      L.circleMarker([lat,lon],{radius:r,color:'#fbbf24',weight:2,fillColor:'#f87171',fillOpacity:.55})
+        .addTo(mapInst)
+        .bindPopup(`<b>${esc(cp.name||cp.id)}</b><br>Mentions: ${mentions}<br>${esc(cp.region||cp.description||'')}`);
+    });
+    $('map-legend').textContent='Chokepoints · sized by recent mentions';
+  } else {
+    (CACHE.points||[]).forEach(p=>{
+      if(p.lon==null||p.lat==null||(p.lon===0&&p.lat===0)) return;
+      const r=Math.max(6,Math.min(20,6+(p.enabled||0)*1.4+(p.items||0)*0.02));
+      L.circleMarker([p.lat,p.lon],{radius:r,color:'#4f8cff',weight:1.5,fillColor:'#2dd4bf',fillOpacity:.55})
+        .addTo(mapInst)
+        .bindPopup(`<b>${esc(p.name)}</b><br>On: ${p.enabled||0}/${p.sources||0}<br>Items: ${p.items||0}`);
+    });
+    $('map-legend').textContent='Regions · free tiles · no API key';
+  }
+}
+async function loadMap(){
+  try{
+    const [geo, cps] = await Promise.all([
+      fetchJSON('/api/geo'),
+      fetchJSON('/api/chokepoints').catch(()=>[])
+    ]);
+    CACHE.points=geo.points||[];
+    CACHE.chokepoints=Array.isArray(cps)?cps:(cps.points||[]);
+    const points=CACHE.points;
+    $('map-controls').innerHTML=`
+      <button type="button" class="chip ${MAP_MODE==='regions'?'on':''}" id="map-reg">Regions (${points.length})</button>
+      <button type="button" class="chip ${MAP_MODE==='chokepoints'?'on':''}" id="map-cp">Chokepoints (${CACHE.chokepoints.length})</button>
+      <button type="button" class="chip" id="map-fit">Fit all</button>`;
+    $('map-reg').onclick=()=>{ MAP_MODE='regions'; drawMapLayers(); loadMapSide(); $('map-reg').classList.add('on'); $('map-cp').classList.remove('on'); };
+    $('map-cp').onclick=()=>{ MAP_MODE='chokepoints'; drawMapLayers(); loadMapSide(); $('map-cp').classList.add('on'); $('map-reg').classList.remove('on'); };
+    $('map-fit').onclick=()=>{
+      if(!mapInst) return;
+      const layers=[]; mapInst.eachLayer(l=>{ if(l instanceof L.CircleMarker) layers.push(l); });
+      if(layers.length) mapInst.fitBounds(L.featureGroup(layers).getBounds().pad(0.2));
+    };
+    loadMapSide();
+    if(activeTab==='map'){ ensureMap(); drawMapLayers(); if(mapInst) setTimeout(()=>mapInst.invalidateSize(),60); }
+  }catch(e){ $('map-side').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
+}
+function loadMapSide(){
+  if(MAP_MODE==='chokepoints' && CACHE.chokepoints.length){
+    const sorted=[...CACHE.chokepoints].sort((a,b)=>(b.recent_mentions||0)-(a.recent_mentions||0));
+    const max=Math.max(1,...sorted.map(c=>c.recent_mentions||0));
+    $('map-side').innerHTML=`<div class="card-block"><div class="t">Trade chokepoints · recent story mentions</div>${
+      sorted.slice(0,20).map(cp=>`<div class="bar-row"><div class="bar-label">${esc(cp.name||cp.id)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(cp.recent_mentions||0)/max*100}%;background:linear-gradient(90deg,#fbbf24,#f87171)"></div></div>
+      <div class="bar-count">${cp.recent_mentions||0}</div></div>`).join('')
+    }</div>`;
+  } else {
+    const points=CACHE.points||[];
+    $('map-side').innerHTML=`<div class="card-block"><div class="t">Regions · ${points.length}</div>${
+      points.slice(0,24).map(p=>`<div class="bar-row"><div class="bar-label">${esc(p.name)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,((p.enabled||0)+(p.items||0))*6)}%"></div></div>
+      <div class="bar-count">${(p.enabled||0)}/${(p.sources||0)}</div></div>`).join('')||'—'
+    }</div>`;
+  }
+}
+
+/* ===== STREAMS ===== */
 async function loadStreams(){
   try{
     const streams=await fetchJSON('/api/streams');
-    const form=`<div class="stream-form"><input id="st-name" placeholder="Name"><input id="st-country" placeholder="Label" value="Custom"><input id="st-link" placeholder="YouTube live / watch URL"><button class="primary" onclick="addStream()">Add live</button><div class="hint">Paste youtube.com/watch · /live/ · youtu.be · embed links</div></div>`;
-    const cards=streams.length?`<div class="stream-grid">`+streams.map(s=>`<div class="card stream-card"><button class="rm" onclick='removeStream(${JSON.stringify(s.name)})'>Remove</button><div class="t">${esc(s.name)} <span class="tag">${esc(s.country||'')}</span></div>${s.embed_url?`<iframe src="${esc(s.embed_url)}" title="${esc(s.name)}" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="m" style="margin-top:6px"><a href="${esc(s.watch_url||'')}" target="_blank" rel="noopener">YouTube ↗</a></div>`:''}</div>`).join('')+`</div>`:'<div class="empty">Add a YouTube live link above.</div>';
-    $('panel-streams').innerHTML=form+cards;
-  }catch(e){$('panel-streams').innerHTML=`<div class="error">${esc(e.message)}</div>`}
+    const list=Array.isArray(streams)?streams:(streams.streams||[]);
+    const cards=list.map(s=>{
+      const name=s.name||'Stream'; const embed=s.embed||s.embed_url||''; const link=s.link||s.url||'#';
+      return `<div class="stream-card">
+        ${embed?`<iframe src="${esc(embed)}" allowfullscreen allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"></iframe>`
+          :'<div class="empty" style="height:170px;padding:40px">No embed URL</div>'}
+        <div class="meta">
+          <div><b>${esc(name)}</b><div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(s.country||'Live')}</div></div>
+          <div style="display:flex;gap:5px">
+            <a class="btn" href="${esc(link)}" target="_blank" rel="noopener" style="padding:5px 8px;font-size:11px">Open</a>
+            <button type="button" class="btn stream-del" data-name="${esc(name)}" style="padding:5px 8px;font-size:11px">Remove</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    $('panel-streams').innerHTML=`
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="n">${list.length}</div><div class="l">Streams</div></div>
+        <div class="mini-stat"><div class="n">${list.filter(s=>s.embed||s.embed_url).length}</div><div class="l">With embed</div></div>
+      </div>
+      <div class="stream-form">
+        <input type="text" id="st-name" placeholder="Name (e.g. Al Jazeera)">
+        <input type="text" id="st-country" placeholder="Region">
+        <input type="url" id="st-link" placeholder="YouTube live URL or video id" style="flex:2">
+        <button type="button" class="primary" id="btn-add-stream">Add stream</button>
+      </div>
+      <div class="stream-grid">${cards||'<div class="empty" style="grid-column:1/-1">No live streams yet. Paste a YouTube live URL above.</div>'}</div>`;
+    const add=$('btn-add-stream'); if(add) add.addEventListener('click',addStream);
+    document.querySelectorAll('.stream-del').forEach(btn=>btn.addEventListener('click',()=>removeStream(btn.dataset.name)));
+  }catch(e){ $('panel-streams').innerHTML=`<div class="error">${esc(e.message)}</div>`; }
 }
 async function addStream(){
-  const name=$('st-name').value.trim(), country=$('st-country').value.trim()||'Custom', link=$('st-link').value.trim();
-  if(!name||!link){alert('Name and link required');return}
-  const r=await fetch('/api/streams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,country,link})});
-  const d=await r.json(); if(!d.ok){alert(d.error||'Failed');return} await loadStreams();
+  const name=($('st-name')&&$('st-name').value||'').trim();
+  const country=($('st-country')&&$('st-country').value||'').trim()||'Custom';
+  const link=($('st-link')&&$('st-link').value||'').trim();
+  if(!name||!link){ toast('Name and link required','err'); return; }
+  try{
+    const r=await fetch('/api/streams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,country,link})});
+    const d=await r.json(); if(!d.ok){ toast(d.error||'Failed','err'); return; }
+    toast('Stream added','ok'); await loadStreams();
+  }catch(e){ toast(String(e.message||e),'err'); }
 }
 async function removeStream(name){
-  if(!confirm('Remove "'+name+'"?'))return;
-  const r=await fetch('/api/streams/'+encodeURIComponent(name),{method:'DELETE'});
-  const d=await r.json(); if(!d.ok){alert(d.error||'Failed');return} await loadStreams();
-}
-
-
-let mapInst=null, mapLayer=null;
-async function loadMap(){
-  const el=$('panel-map');
+  if(!name) return;
   try{
-    const data=await fetchJSON('/api/geo');
-    const points=data.points||[];
-    el.innerHTML=`<div class="map-wrap"><div id="map"></div></div>
-      <div class="card" style="margin-top:12px"><div class="t">Regions · ${data.total_regions||points.length}</div>
-      <div class="m" style="margin-top:8px;flex-direction:column;align-items:stretch;gap:6px">
-      ${points.slice(0,20).map(p=>`<div class="bar-row"><div class="bar-label">${esc(p.name)}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,((p.enabled||0)+(p.items||0))*8)}%"></div></div>
-        <div class="bar-count">${(p.enabled||0)}/${(p.sources||0)}</div></div>`).join('')||'—'}
-      </div></div>`;
-    // init leaflet after DOM
-    setTimeout(()=>{
-      if(mapInst){ mapInst.remove(); mapInst=null; }
-      mapInst=L.map('map',{worldCopyJump:true}).setView([20,10],2);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-        attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:8
-      }).addTo(mapInst);
-      points.forEach(p=>{
-        if(p.lon==null||p.lat==null) return;
-        const r=Math.max(6, Math.min(22, 6+(p.enabled||0)*2+(p.items||0)*0.01));
-        const mark=L.circleMarker([p.lat,p.lon],{
-          radius:r, color:'#4f8cff', weight:1, fillColor:'#2dd4bf', fillOpacity:0.55
-        }).addTo(mapInst);
-        mark.bindPopup(`<b>${esc(p.name)}</b><br>Sources on: ${p.enabled||0}/${p.sources||0}<br>Items: ${p.items||0}`);
-      });
-    }, 50);
-  }catch(e){ el.innerHTML=`<div class="error">${esc(e.message)}</div>`; }
+    const r=await fetch('/api/streams/'+encodeURIComponent(name),{method:'DELETE'});
+    const d=await r.json(); if(!d.ok){ toast(d.error||'Failed','err'); return; }
+    toast('Removed','ok'); await loadStreams();
+  }catch(e){ toast(String(e.message||e),'err'); }
 }
 
 async function exportJson(){
   try{
+    toast('Exporting…');
     const data=await fetchJSON('/api/export?limit=5000');
     const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='geowatch-export.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }catch(e){ alert('Export failed: '+e.message); }
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='geowatch-export.json'; a.click(); URL.revokeObjectURL(a.href);
+    toast('Export ready','ok');
+  }catch(e){ toast('Export failed: '+e.message,'err'); }
 }
 
 async function loadAll(){
   $('refresh-note').textContent='…';
-  await Promise.all([loadStatus(),loadStats(),loadContent(true),loadSources(),loadChanges(),loadBreakdown(),loadWeekly(),loadMap(),loadStreams()]);
+  await Promise.all([loadStatus(),loadStats(),loadContent(true),loadSources(),loadChanges(),loadMap()]);
+  if(activeTab==='breakdown') await loadBreakdown();
+  if(activeTab==='weekly') await loadWeekly();
+  if(activeTab==='streams') await loadStreams();
   $('refresh-note').textContent=new Date().toLocaleTimeString();
 }
+
+document.getElementById('nav').addEventListener('click',e=>{
+  const tab=e.target.closest('.tab'); if(!tab) return; switchTab(tab.dataset.tab);
+});
+$('btn-theme').addEventListener('click',toggleTheme);
+$('btn-export').addEventListener('click',exportJson);
+$('btn-refresh').addEventListener('click',()=>{ loadAll(); toast('Refreshing…'); });
+
 loadAll();
-setInterval(()=>{if($('auto-refresh')?.checked)loadAll()},30000);
+setInterval(()=>{ if($('auto-refresh')&&$('auto-refresh').checked) loadAll(); },30000);
+window.GW={loadAll,switchTab,CACHE};
+})();
 </script>
 </body>
 </html>

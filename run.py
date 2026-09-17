@@ -23,7 +23,7 @@ DEMO_CRAWL_URL = "https://www.bbc.com/news"
 DEMO_RSS_URL = "https://feeds.bbci.co.uk/news/world/rss.xml"
 
 # 24/7 settings
-UPDATE_INTERVAL = 30  # seconds
+UPDATE_INTERVAL = 120  # seconds (full cycle often >30s)
 _running = True
 
 
@@ -102,6 +102,8 @@ def do_import(path: str = None):
 
 
 def do_check(limit: int = 0, quiet: bool = False):
+    """Page-change monitor. Skips RSS feeds (handled by do_rss) and onion
+    when Tor is off — those used to flood the dashboard with red errors."""
     from tqdm import tqdm
     init_db()
     session = get_session()
@@ -110,14 +112,38 @@ def do_check(limit: int = 0, quiet: bool = False):
         if not quiet:
             print("⚠️  No sources. Import first.")
         return 0, 0
+
+    # Only check real page sources — skip RSS, feeds, and video pages
+    # (YouTube watch/shorts waste time and only produce truncated junk HTML)
+    SKIP_URL_PARTS = (
+        "/rss", "/feed", ".xml", "youtube.com/watch", "youtube.com/shorts",
+        "youtu.be/", "vimeo.com/", "twitter.com/", "x.com/", "facebook.com/",
+        "instagram.com/",
+    )
+    filtered = []
+    for site in sites:
+        try:
+            stype = (site.get("source_type") if isinstance(site, dict) else getattr(site, "source_type", "")) or ""
+            stype = str(stype).lower()
+            url = site["url"] if isinstance(site, dict) else site.url
+        except Exception:
+            continue
+        if not url:
+            continue
+        ul = url.lower()
+        if stype == "rss" or stype == "trend":
+            continue
+        if any(p in ul for p in SKIP_URL_PARTS):
+            continue
+        filtered.append(site)
+
     if limit:
-        sites = sites[:limit]
+        filtered = filtered[:limit]
     if not quiet:
-        print(f"🔍 Checking {len(sites)} sources...")
+        print(f"🔍 Checking {len(filtered)} page sources (RSS skipped — collected separately)...")
     changed = errors = 0
-    iterator = sites if quiet else tqdm(sites, desc="Monitor")
+    iterator = filtered if quiet else tqdm(filtered, desc="Monitor")
     for site in iterator:
-        # FIX #8: Add type safety with explicit error handling
         try:
             url = site["url"] if isinstance(site, dict) else site.url
             if not url or not isinstance(url, str):
@@ -128,10 +154,11 @@ def do_check(limit: int = 0, quiet: bool = False):
                 print(f"   ⚠️  Invalid site object: {e}")
             errors += 1
             continue
-            
-        if is_onion(url) and not (USE_TOR or ENABLE_ONION):
-            update_site_after_check(session, site, error="Onion skipped")
+
+        if is_onion(url) and not USE_TOR:
+            # Soft-skip: do not stamp a permanent red error on the dashboard
             continue
+
         text, status, error = fetch_page(url)
         if error or text is None:
             update_site_after_check(session, site, status_code=status, error=error)
@@ -151,10 +178,11 @@ def do_check(limit: int = 0, quiet: bool = False):
         is_changed = last_hash is not None and last_hash != new_hash
         if is_changed:
             changed += 1
+        # Clear previous error on success
         update_site_after_check(
             session, site,
             content_hash=new_hash, status_code=status,
-            content=text, title=title, changed=is_changed,
+            content=text, title=title, changed=is_changed, error=None,
         )
         polite_delay()
     if hasattr(session, "close"):
@@ -313,7 +341,7 @@ def do_sanctions(quiet: bool = False):
             hits_total += 1
             if not quiet:
                 title = (it.get("title") or it.get("name") or it.get("url") or "")[:60]
-                print(f"   HIT: {title} → {', '.join(hits[:5])}")
+                print(f"   HIT: {title} → {', '.join(hits[:3])}")
     if hasattr(session, "close"):
         session.close()
     if not quiet:

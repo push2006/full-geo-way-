@@ -98,7 +98,10 @@ def mongo_targets():
         })
     return targets
 
-USER_AGENT = os.getenv("USER_AGENT", "GeoWatch-Pro/2.0 (legitimate research)")
+USER_AGENT = os.getenv(
+    "USER_AGENT",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+)
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "25"))
 DELAY_BETWEEN_REQUESTS = float(os.getenv("DELAY_BETWEEN_REQUESTS", "1.2"))
 MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", "600000"))
@@ -156,6 +159,8 @@ DASHBOARD_PORT = int(os.getenv("PORT", "8501"))
 
 # --- Trends: social platforms beyond Reddit/HN ---
 # All of these use free public endpoints — no paid API keys required.
+# Set ENABLE_REDDIT_TRENDS=false in .env to silence Reddit 403 noise
+ENABLE_REDDIT_TRENDS = os.getenv("ENABLE_REDDIT_TRENDS", "true").lower() in ("true", "1", "yes")
 TREND_SUBREDDITS = [s.strip() for s in os.getenv(
     "TREND_SUBREDDITS",
     "worldnews,geopolitics,news,India,China,Russia,europe,africa,MiddleEast,economics,technology"

@@ -38,6 +38,12 @@ def index():
     return send_from_directory(str(STATIC_DIR), "dashboard.html")
 
 
+@app.route("/favicon.ico")
+def favicon():
+    # Tiny empty response — stops browser 404 spam in logs
+    return ("", 204)
+
+
 @app.route("/api/sites")
 def api_sites():
     session = get_session()
