@@ -3,7 +3,7 @@ core.storage as JSON, and the dashboard page itself. No AI calls, no
 external API — everything here reads directly from data/geowatch.db
 (or MongoDB, if that's your STORAGE_BACKEND).
 
-Run with: python run.py dashboard
+Run with: python run.py
 """
 from pathlib import Path
 from flask import Flask, jsonify, send_from_directory

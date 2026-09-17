@@ -1,5 +1,5 @@
 """Storage — SQLite (default) or MongoDB. Stores real content, not just metadata."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from core.config import STORAGE_BACKEND, SQLITE_PATH, MONGODB_URI, MONGODB_DB
 
@@ -29,8 +29,8 @@ class Site(Base):
     source_type = Column(String(32), default="page")  # page|rss|onion|trend
     platform = Column(String(64), default="")
     score = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 class ChangeLog(Base):
     __tablename__ = "change_logs"
@@ -41,7 +41,7 @@ class ChangeLog(Base):
     old_hash = Column(String(64), nullable=True)
     new_hash = Column(String(64))
     content_preview = Column(Text, nullable=True)
-    detected_at = Column(DateTime, default=datetime.utcnow)
+    detected_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 def _init_sqlite():
     global _engine, _Session
@@ -78,8 +78,8 @@ def upsert_site(session, url: str, name: str = "", category: str = "general",
                 "enabled": enabled, "source_type": source_type, "platform": platform,
                 "score": score, "content": (content or "")[:50000],
                 "content_preview": (content or "")[:800],
-                "updated_at": datetime.utcnow()
-            }, "$setOnInsert": {"created_at": datetime.utcnow()}},
+                "updated_at": datetime.now(timezone.utc)
+            }, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
             upsert=True
         )
         return col.find_one({"url": url})
@@ -96,7 +96,7 @@ def upsert_site(session, url: str, name: str = "", category: str = "general",
             if content:
                 site.content = content[:50000]
                 site.content_preview = content[:800]
-            site.updated_at = datetime.utcnow()
+            site.updated_at = datetime.now(timezone.utc)
         else:
             site = Site(
                 url=url, name=name or title, title=title or name, category=category,
@@ -115,7 +115,7 @@ def get_enabled_sites(session) -> List:
 
 def update_site_after_check(session, site, content_hash=None, status_code=None,
                             content=None, title=None, error=None, changed=False):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     preview = (content or "")[:800] if content else None
     full = (content or "")[:50000] if content else None
 
@@ -201,7 +201,7 @@ def weekly_top_articles(session, days: int = 7, limit: int = 15) -> List[Dict]:
     against Site.updated_at/score since that's what this schema tracks
     (geonews's version used a separate Mongo `articles` collection)."""
     from datetime import timedelta
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     if STORAGE_BACKEND == "mongodb":
         return list(session["sites"].find(
             {"updated_at": {"$gte": cutoff}}
@@ -218,7 +218,7 @@ def category_counts(session, days: int = 7) -> Dict[str, int]:
     """How many items landed in each category in the last `days` days."""
     from datetime import timedelta
     from collections import Counter
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     if STORAGE_BACKEND == "mongodb":
         docs = session["sites"].find({"updated_at": {"$gte": cutoff}}, {"category": 1})
         return dict(Counter(d.get("category", "general") for d in docs))

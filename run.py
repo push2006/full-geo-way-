@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 GeoWatch Pro — ONE COMMAND
-  python run.py           → full pipeline once (no UI)
-  python run.py 24        → 24/7 mode, update every 30 seconds
+
+  python run.py
+
+Collects continuously + serves dashboard at http://127.0.0.1:8501
 """
 import argparse, sys, time, signal
 from pathlib import Path
@@ -284,8 +286,7 @@ def do_24_7(interval: int = UPDATE_INTERVAL):
     do_cycle(quiet=False)
     print()
     print(f"③ Entering 24/7 loop (every {interval}s)...")
-    print("   Dashboard: open another terminal → python run.py dash")
-    print("   Or open http://localhost:8501 if already running")
+    print("   Dashboard: http://127.0.0.1:8501")
     print()
 
     cycle_num = 1
@@ -332,97 +333,29 @@ def do_all():
         print(f"   Crawl partial: {e}")
     do_check()
     print()
-    print("③ Done (no dashboard — Streamlit removed)")
+    print("③ Done")
 
 
 def main():
     p = argparse.ArgumentParser(
-        description="GeoWatch Pro — One command / 24/7 mode",
+        description="GeoWatch Pro — one command",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"""
-ONE COMMAND (run once):
+        epilog="""
+ONE CORRECT WAY:
   python run.py
 
-24/7 MODE (update every {UPDATE_INTERVAL} seconds):
-  python run.py 24
-
-Other:
-  python run.py trends
-  python run.py check
-  python run.py crawl URL --pages 25
-  python run.py rss --url FEED
-  python run.py rss --from-sources
-  python run.py gnews
-  python run.py streams
-  python run.py notify
-  python run.py dashboard
-  python run.py serve      ← ONE command: collection + dashboard together
-        """
+Collects continuously + serves dashboard at http://127.0.0.1:8501
+        """,
     )
-    sub = p.add_subparsers(dest="cmd")
-    sub.add_parser("all")
-    sub.add_parser("24", help="24/7 mode — update every 30s")
-    sub.add_parser("watch", help="Same as 24")
-    sub.add_parser("check")
-    sub.add_parser("trends")
-    c = sub.add_parser("crawl")
-    c.add_argument("url")
-    c.add_argument("--pages", type=int, default=20)
-    c.add_argument("--depth", type=int, default=2)
-    c.add_argument("--name", default="")
-    i = sub.add_parser("import")
-    i.add_argument("file", nargs="?", default=None)
-    r = sub.add_parser("rss")
-    r.add_argument("--url", default=None)
-    r.add_argument("--from-sources", action="store_true")
-    sub.add_parser("gnews", help="Google News keyword search (needs ENABLE_GNEWS=true + pip install gnews)")
-    sub.add_parser("streams", help="List configured live-video streams (config/streams.yaml)")
-    sub.add_parser("notify", help="Send a digest now over whichever ENABLE_EMAIL/TELEGRAM/WHATSAPP channels are on")
-    d = sub.add_parser("dashboard", help="Serve the live dashboard (reads real data, no AI calls)")
-    d.add_argument("--host", default=None)
-    d.add_argument("--port", type=int, default=None)
-    sv = sub.add_parser("serve", help="ONE command: 24/7 collection + dashboard together, one process")
-    sv.add_argument("--host", default=None)
-    sv.add_argument("--port", type=int, default=None)
-    p.add_argument("--interval", type=int, default=UPDATE_INTERVAL, help="Seconds between updates in 24/7 mode")
-
+    p.add_argument("--host", default=None, help="Dashboard host (default 127.0.0.1)")
+    p.add_argument("--port", type=int, default=None, help="Dashboard port (default 8501)")
+    p.add_argument("--interval", type=int, default=UPDATE_INTERVAL, help="Seconds between collection cycles")
+    # Keep serve as optional alias so Procfile / old docs still work
+    p.add_argument("cmd", nargs="?", default="serve", help=argparse.SUPPRESS)
     args = p.parse_args()
-    interval = getattr(args, "interval", UPDATE_INTERVAL) or UPDATE_INTERVAL
-
-    if args.cmd in ("24", "watch"):
-        do_24_7(interval=interval)
-    elif args.cmd == "import":
-        do_import(args.file)
-    elif args.cmd == "check":
-        do_check()
-    elif args.cmd == "crawl":
-        do_crawl(args.url, args.pages, args.depth, args.name)
-    elif args.cmd == "rss":
-        do_rss(args.url, args.from_sources)
-    elif args.cmd == "trends":
-        do_trends()
-    elif args.cmd == "gnews":
-        do_gnews()
-    elif args.cmd == "streams":
-        do_streams()
-    elif args.cmd == "notify":
-        from notifications.digest import run_digest
-        sent = run_digest()
-        print(f"Digest sent: {len(sent)} items considered")
-        from notifications.weekly_report import run_weekly_report
-        if run_weekly_report():
-            print("Weekly report also sent")
-    elif args.cmd == "dashboard":
-        from core.config import DASHBOARD_HOST, DASHBOARD_PORT
-        from core.webapp import run_dashboard
-        run_dashboard(host=args.host or DASHBOARD_HOST, port=args.port or DASHBOARD_PORT)
-    elif args.cmd == "serve":
-        do_serve(interval=interval, host=args.host, port=args.port)
-    elif args.cmd == "all":
-        do_all()
-    else:
-        # default: one full run
-        do_all()
+    interval = args.interval or UPDATE_INTERVAL
+    # Always run the one correct mode
+    do_serve(interval=interval, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

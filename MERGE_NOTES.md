@@ -135,3 +135,12 @@ thing to start and stop.
 when you actually want them apart (e.g. a cloud worker process
 collecting while a different web process serves the dashboard — see the
 `Procfile`, which now just runs `serve` as the single web process).
+
+---
+
+## Later cleanup (single entry + single sources)
+
+- **One sources file:** `config/sources.yaml` only (`sources.csv` and `brics_sources.yaml` removed).
+- **One command:** `python run.py` runs collection + dashboard. `start.py` is a thin wrapper.
+- **Python 3.12:** `datetime.utcnow()` replaced with `datetime.now(timezone.utc)`.
+- **Dependencies:** requirements.txt bumped to current stable floors (Flask 3.1+, SQLAlchemy 2.0.36+, httpx 0.28+, etc.).
