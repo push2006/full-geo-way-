@@ -1,3 +1,6 @@
+[HOW-TO-APPLY-FIXES.md](https://github.com/user-attachments/files/32334150/HOW-TO-APPLY-FIXES.md)
+[GeoWatch-Pro-Bugs-FIXED.md](https://github.com/user-attachments/files/32334148/GeoWatch-Pro-Bugs-FIXED.md)
+[FIXES-SUMMARY.md](https://github.com/user-attachments/files/32334147/FIXES-SUMMARY.md)
 # GeoWatch Pro
 
 One command. Continuous geopolitical collection + live dashboard.
