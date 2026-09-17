@@ -1,0 +1,489 @@
+# GeoWatch Pro — single sources config
+# All RSS feeds, pages, and BRICS sources in one place.
+# Edit this file only. Set enabled: false to skip a source.
+# type: rss | page | scrape   (scrape/tier-3 off by default)
+
+sources:
+- name: Agencia Brasil
+  url: https://agenciabrasil.ebc.com.br/rss.xml
+  category: brazil
+  enabled: true
+  type: rss
+  country: Brazil
+  tier: 2
+- name: Agencia Brasil Site
+  url: https://agenciabrasil.ebc.com.br
+  category: brazil
+  enabled: true
+  type: page
+- name: Xinhua
+  url: http://www.xinhuanet.com/english/rss/worldrss.xml
+  category: china
+  enabled: true
+  type: rss
+  country: China
+  tier: 1
+- name: Xinhua Site
+  url: http://www.xinhuanet.com/english
+  category: china
+  enabled: true
+  type: page
+- name: Daily News Egypt
+  url: https://dailynewsegypt.com/feed/
+  category: egypt
+  enabled: true
+  type: rss
+  country: Egypt
+  tier: 2
+- name: Fana Broadcasting
+  url: https://www.fanabc.com/english/feed/
+  category: ethiopia
+  enabled: true
+  type: rss
+  country: Ethiopia
+  tier: 2
+- name: AIIA
+  url: https://www.internationalaffairs.org.au/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Al Jazeera
+  url: https://www.aljazeera.com/xml/rss/all.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC Business
+  url: https://feeds.bbci.co.uk/news/business/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: BBC World
+  url: https://feeds.bbci.co.uk/news/world/rss.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Devdiscourse
+  url: https://www.devdiscourse.com/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Foreign Policy
+  url: https://foreignpolicy.com/feed/
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Foreign Policy Site
+  url: https://foreignpolicy.com
+  category: geopolitics
+  enabled: true
+  type: page
+- name: NYT World
+  url: https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Reuters World
+  url: https://www.reutersagency.com/feed/?taxonomy=best-topics&post_type=best
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: The Guardian World
+  url: https://www.theguardian.com/world/rss
+  category: geopolitics
+  enabled: true
+  type: rss
+- name: Hindustan Times
+  url: https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml
+  category: india
+  enabled: true
+  type: rss
+  country: India
+  tier: 2
+- name: Indian Express
+  url: https://indianexpress.com/section/india/feed/
+  category: india
+  enabled: true
+  type: rss
+- name: Mint
+  url: https://www.livemint.com/rss/news
+  category: india
+  enabled: true
+  type: rss
+- name: NDTV
+  url: https://www.ndtv.com
+  category: india
+  enabled: true
+  type: page
+- name: NDTV Top Stories
+  url: https://feeds.feedburner.com/ndtvnews-top-stories
+  category: india
+  enabled: true
+  type: rss
+  country: India
+  tier: 2
+- name: PIB India
+  url: https://pib.gov.in/RssMain.aspx?ModId=8&Lang=1&Regid=1
+  category: india
+  enabled: true
+  type: rss
+- name: PIB India Site
+  url: https://pib.gov.in
+  category: india
+  enabled: true
+  type: page
+- name: The Hindu
+  url: https://www.thehindu.com/feeder/default.rss
+  category: india
+  enabled: true
+  type: rss
+  country: India
+  tier: 2
+- name: The Hindu Site
+  url: https://www.thehindu.com
+  category: india
+  enabled: true
+  type: page
+- name: Times of India
+  url: https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms
+  category: india
+  enabled: true
+  type: rss
+  country: India
+  tier: 2
+- name: Antara News
+  url: https://en.antaranews.com/rss/news.xml
+  category: indonesia
+  enabled: true
+  type: rss
+  country: Indonesia
+  tier: 2
+- name: UN News
+  url: https://news.un.org/feed/subscribe/en/news/topic/world/feed/rss.xml
+  category: international
+  enabled: true
+  type: rss
+- name: UN News Site
+  url: https://news.un.org
+  category: international
+  enabled: true
+  type: page
+- name: IRNA
+  url: https://en.irna.ir/rss
+  category: iran
+  enabled: true
+  type: rss
+  country: Iran
+  tier: 1
+- name: IRNA Site
+  url: https://en.irna.ir
+  category: iran
+  enabled: true
+  type: page
+- name: Al Jazeera
+  url: https://www.aljazeera.com
+  category: news
+  enabled: true
+  type: page
+- name: BBC News
+  url: https://www.bbc.com/news
+  category: news
+  enabled: true
+  type: page
+- name: Guardian World
+  url: https://www.theguardian.com/world
+  category: news
+  enabled: true
+  type: page
+- name: NYT World
+  url: https://www.nytimes.com/section/world
+  category: news
+  enabled: true
+  type: page
+- name: Reuters
+  url: https://www.reuters.com
+  category: news
+  enabled: true
+  type: page
+- name: BBC News Onion
+  url: http://ej3kv4kblqq24h7jye3skv7vtaeag5xgfyyen5tzr2yl2jqxacdi3oqd.onion
+  category: onion
+  enabled: true
+  type: page
+- name: DuckDuckGo Onion
+  url: http://dusk5np3y5qzgw3y.onion
+  category: onion
+  enabled: true
+  type: page
+- name: Facebook Onion
+  url: http://facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion
+  category: onion
+  enabled: true
+  type: page
+- name: Internet Archive Onion
+  url: http://archiveiya74codqgiixo33q62qlrqtkgmcitqx5z6g4j6vq4j.onion
+  category: onion
+  enabled: true
+  type: page
+- name: Proton Mail Onion
+  url: http://protonmailrmez3lotccipshtkleegetolb73fuirgj7r4o4vfu7ozyd.onion
+  category: onion
+  enabled: true
+  type: page
+- name: Tor Project
+  url: http://www.nsazi3sqvf3gb6g3.onion
+  category: onion
+  enabled: true
+  type: page
+- name: BIS
+  url: https://www.bis.org
+  category: research
+  enabled: true
+  type: page
+- name: BIS Research
+  url: https://www.bis.org/rss/research.rss
+  category: research
+  enabled: true
+  type: rss
+- name: CEPR / VoxEU
+  url: https://cepr.org/rss/vox-content
+  category: research
+  enabled: true
+  type: rss
+- name: NBER Working Papers
+  url: https://www.nber.org/rss/new.xml
+  category: research
+  enabled: true
+  type: rss
+- name: Peterson Institute
+  url: https://www.piie.com/rss/update.xml
+  category: research
+  enabled: true
+  type: rss
+- name: arXiv Economics
+  url: https://export.arxiv.org/rss/econ.GN
+  category: research
+  enabled: true
+  type: rss
+- name: Amnesty
+  url: https://www.amnesty.org
+  category: rights
+  enabled: true
+  type: page
+- name: Amnesty International
+  url: https://www.amnesty.org/en/feed/
+  category: rights
+  enabled: true
+  type: rss
+- name: Kremlin
+  url: http://en.kremlin.ru
+  category: russia
+  enabled: true
+  type: page
+- name: RIA Novosti
+  url: https://ria.ru/export/rss2/index.xml
+  category: russia
+  enabled: true
+  type: rss
+  country: Russia
+  tier: 1
+- name: RIA Site
+  url: https://ria.ru
+  category: russia
+  enabled: true
+  type: page
+- name: TASS
+  url: https://tass.com/rss/v2.xml
+  category: russia
+  enabled: true
+  type: rss
+  country: Russia
+  tier: 1
+- name: TASS Site
+  url: https://tass.com
+  category: russia
+  enabled: true
+  type: page
+- name: Baker McKenzie Sanctions
+  url: https://sanctionsnews.bakermckenzie.com/feed/
+  category: sanctions
+  enabled: true
+  type: rss
+- name: Global Trade & Sanctions Law
+  url: https://www.globaltradeandsanctionslaw.com/feed/
+  category: sanctions
+  enabled: true
+  type: rss
+- name: Saudi Gazette
+  url: https://saudigazette.com.sa/rssFeed/74
+  category: saudi
+  enabled: true
+  type: rss
+  country: SaudiArabia
+  tier: 2
+- name: News24
+  url: https://feeds.capi24.com/v1/Search/articles/news24/TopStories/rss
+  category: southafrica
+  enabled: true
+  type: rss
+  country: SouthAfrica
+  tier: 2
+- name: News24 Site
+  url: https://www.news24.com
+  category: southafrica
+  enabled: true
+  type: page
+- name: SABC News
+  url: https://www.sabcnews.com/sabcnews/feed/
+  category: southafrica
+  enabled: true
+  type: rss
+  country: SouthAfrica
+  tier: 2
+- name: UNCTAD
+  url: https://unctad.org/rss.xml
+  category: trade
+  enabled: true
+  type: rss
+- name: WTO
+  url: https://www.wto.org
+  category: trade
+  enabled: true
+  type: page
+- name: WTO News
+  url: https://www.wto.org/english/news_e/news_e.rss
+  category: trade
+  enabled: true
+  type: rss
+- name: G1/Globo
+  url: https://g1.globo.com/rss/g1/
+  category: brazil
+  enabled: false
+  type: rss
+  country: Brazil
+  tier: 2
+- name: gov.br (official)
+  url: https://www.gov.br/pt-br
+  category: brazil
+  enabled: false
+  type: scrape
+  country: Brazil
+  tier: 3
+- name: CCTV
+  url: https://english.cctv.com/rss/world.xml
+  category: china
+  enabled: false
+  type: rss
+  country: China
+  tier: 2
+- name: MFA China (official)
+  url: https://www.mfa.gov.cn/eng
+  category: china
+  enabled: false
+  type: page
+  country: China
+  tier: 3
+- name: Ahram Online
+  url: https://english.ahram.org.eg/UI/Front/RSS.aspx
+  category: egypt
+  enabled: false
+  type: rss
+  country: Egypt
+  tier: 2
+- name: SIS Egypt (official)
+  url: https://www.sis.gov.eg/en/
+  category: egypt
+  enabled: false
+  type: scrape
+  country: Egypt
+  tier: 3
+- name: Ethiopia PMO (off.)
+  url: https://pmo.gov.et/
+  category: ethiopia
+  enabled: false
+  type: scrape
+  country: Ethiopia
+  tier: 3
+- name: Ethiopian News Agency
+  url: https://www.ena.et/en/?feed=rss2
+  category: ethiopia
+  enabled: false
+  type: rss
+  country: Ethiopia
+  tier: 2
+- name: Jakarta Post
+  url: https://www.thejakartapost.com/rss/news
+  category: indonesia
+  enabled: false
+  type: rss
+  country: Indonesia
+  tier: 2
+- name: Kemlu Indonesia (off.)
+  url: https://kemlu.go.id/
+  category: indonesia
+  enabled: false
+  type: scrape
+  country: Indonesia
+  tier: 3
+- name: Iran Press (official)
+  url: https://iranpress.com/
+  category: iran
+  enabled: false
+  type: scrape
+  country: Iran
+  tier: 3
+- name: Press TV
+  url: https://www.presstv.ir/rss.xml
+  category: iran
+  enabled: false
+  type: rss
+  country: Iran
+  tier: 1
+- name: Kremlin (official)
+  url: http://kremlin.ru/events/president/news
+  category: russia
+  enabled: false
+  type: scrape
+  country: Russia
+  tier: 3
+- name: Arab News
+  url: https://www.arabnews.com/rss.xml
+  category: saudiarabia
+  enabled: false
+  type: rss
+  country: SaudiArabia
+  tier: 2
+- name: SPA (official)
+  url: https://www.spa.gov.sa/en
+  category: saudiarabia
+  enabled: false
+  type: scrape
+  country: SaudiArabia
+  tier: 3
+- name: SA Govt News (off.)
+  url: https://www.sanews.gov.za/
+  category: southafrica
+  enabled: false
+  type: scrape
+  country: SouthAfrica
+  tier: 3
+- name: The National
+  url: https://www.thenationalnews.com/arc/outboundfeeds/rss/
+  category: uae
+  enabled: false
+  type: rss
+  country: UAE
+  tier: 2
+- name: UAE MFA (official)
+  url: https://www.mofa.gov.ae/
+  category: uae
+  enabled: false
+  type: scrape
+  country: UAE
+  tier: 3
+- name: WAM
+  url: https://wam.ae/en/rss
+  category: uae
+  enabled: false
+  type: rss
+  country: UAE
+  tier: 1

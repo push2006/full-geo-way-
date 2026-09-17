@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoWatch Dashboard</title>
+<style>
+:root{
+  --bg:#080c18; --bg2:#0c1220; --panel:#131c2e; --panel2:#172036;
+  --border:#1c2c44; --border2:#223250; --acc:#3b82f6; --acc2:#06b6d4;
+  --warn:#f59e0b; --danger:#ef4444; --success:#10b981;
+  --text:#e2e8f0; --dim:#94a3b8; --muted:#4e6180;
+}
+html[data-theme="light"]{
+  --bg:#f0f4fa; --bg2:#e8eef8; --panel:#ffffff; --panel2:#f5f8ff;
+  --border:#c5d2e8; --border2:#aec0dc; --acc:#2563eb; --acc2:#0891b2;
+  --text:#0f172a; --dim:#334155; --muted:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;
+     font-size:14px;min-height:100vh;}
+a{color:var(--acc);text-decoration:none;}
+a:hover{text-decoration:underline;}
+button{font-family:inherit;cursor:pointer;background:var(--panel2);color:var(--text);
+       border:1px solid var(--border);border-radius:6px;padding:6px 12px;}
+button:hover{border-color:var(--acc);}
+header{display:flex;align-items:center;justify-content:space-between;
+       padding:16px 24px;border-bottom:1px solid var(--border);background:var(--bg2);}
+header h1{font-size:18px;font-weight:600;}
+header h1 span{color:var(--dim);font-weight:400;font-size:13px;margin-left:10px;}
+main{max-width:1200px;margin:0 auto;padding:24px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.stat .num{font-size:28px;font-weight:700;color:var(--acc);}
+.stat .label{color:var(--dim);font-size:12px;margin-top:4px;}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.tab{padding:10px 16px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;font-size:13px;}
+.tab.active{color:var(--text);border-bottom-color:var(--acc);}
+.panel{display:none;}
+.panel.active{display:block;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+      padding:14px 16px;margin-bottom:10px;}
+.card .title{font-weight:600;margin-bottom:4px;}
+.card .meta{color:var(--dim);font-size:12px;display:flex;gap:12px;flex-wrap:wrap;}
+.tag{background:var(--panel2);border:1px solid var(--border2);border-radius:4px;
+     padding:1px 8px;font-size:11px;color:var(--acc2);}
+.error{color:var(--danger);}
+.empty{color:var(--muted);text-align:center;padding:40px;}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;}
+.bar-label{width:120px;color:var(--dim);flex-shrink:0;}
+.bar-track{flex:1;background:var(--panel2);border-radius:4px;height:16px;overflow:hidden;}
+.bar-fill{background:var(--acc);height:100%;}
+.bar-count{width:36px;text-align:right;color:var(--dim);}
+#refresh-note{color:var(--muted);font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GeoWatch <span>live dashboard — reads directly from your database</span></h1>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span id="refresh-note"></span>
+    <button onclick="loadAll()">↻ Refresh</button>
+    <button onclick="toggleTheme()">◐ Theme</button>
+  </div>
+</header>
+
+<main>
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="sources">Sources</div>
+    <div class="tab" data-tab="content">Recent Content</div>
+    <div class="tab" data-tab="changes">Recent Changes</div>
+    <div class="tab" data-tab="breakdown">Platform / Category</div>
+    <div class="tab" data-tab="weekly">Weekly Report</div>
+    <div class="tab" data-tab="streams">Live Streams</div>
+  </div>
+
+  <div class="panel active" id="panel-sources"><div class="empty">Loading…</div></div>
+  <div class="panel" id="panel-content"><div class="empty">Loading…</div></div>
+  <div class="panel" id="panel-changes"><div class="empty">Loading…</div></div>
+  <div class="panel" id="panel-breakdown"><div class="empty">Loading…</div></div>
+  <div class="panel" id="panel-weekly"><div class="empty">Loading…</div></div>
+  <div class="panel" id="panel-streams"><div class="empty">Loading…</div></div>
+</main>
+
+<script>
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+}));
+
+function toggleTheme(){
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  try { localStorage.setItem('gw_theme', next); } catch(e){}
+}
+try {
+  const saved = localStorage.getItem('gw_theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+} catch(e){}
+
+function esc(s){
+  return (s || '').toString().replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+function fmtDate(s){
+  if (!s) return '';
+  try { return new Date(s).toLocaleString(); } catch(e){ return s; }
+}
+
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' -> ' + r.status);
+  return r.json();
+}
+
+async function loadStats(){
+  try {
+    const s = await fetchJSON('/api/summary');
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="num">${s.total_sources}</div><div class="label">Total sources tracked</div></div>
+      <div class="stat"><div class="num">${s.total_changes_logged}</div><div class="label">Changes logged (all-time)</div></div>
+      <div class="stat"><div class="num">${Object.keys(s.by_platform||{}).length}</div><div class="label">Platforms/source types</div></div>
+      <div class="stat"><div class="num">${Object.keys(s.by_category||{}).length}</div><div class="label">Categories</div></div>
+    `;
+    window._breakdown = s;
+    renderBreakdown();
+  } catch(e){
+    document.getElementById('stats').innerHTML = `<div class="error">Couldn't reach the dashboard API: ${esc(e.message)}</div>`;
+  }
+}
+
+async function loadSources(){
+  const el = document.getElementById('panel-sources');
+  try {
+    const sites = await fetchJSON('/api/sites');
+    if (!sites.length){ el.innerHTML = '<div class="empty">No sources yet — run <code>python run.py</code> first.</div>'; return; }
+    el.innerHTML = sites.slice(0, 200).map(s => `
+      <div class="card">
+        <div class="title"><a href="${esc(s.url)}" target="_blank">${esc(s.title || s.name || s.url)}</a></div>
+        <div class="meta">
+          <span class="tag">${esc(s.category || 'general')}</span>
+          <span class="tag">${esc(s.platform || s.source_type || '')}</span>
+          <span>score: ${s.score ?? 0}</span>
+          <span>${s.error ? '<span class="error">error: ' + esc(s.error) + '</span>' : 'last checked: ' + fmtDate(s.last_checked)}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch(e){ el.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+async function loadContent(){
+  const el = document.getElementById('panel-content');
+  try {
+    const items = await fetchJSON('/api/content');
+    if (!items.length){ el.innerHTML = '<div class="empty">No content stored yet.</div>'; return; }
+    el.innerHTML = items.map(s => `
+      <div class="card">
+        <div class="title"><a href="${esc(s.url)}" target="_blank">${esc(s.title || s.name)}</a></div>
+        <div class="meta">
+          <span class="tag">${esc(s.category || 'general')}</span>
+          <span class="tag">${esc(s.platform || '')}</span>
+          <span>score: ${s.score ?? 0}</span>
+        </div>
+        ${s.content_preview ? `<div style="margin-top:6px;color:var(--dim);font-size:12px;">${esc(s.content_preview).slice(0,220)}…</div>` : ''}
+      </div>
+    `).join('');
+  } catch(e){ el.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+async function loadChanges(){
+  const el = document.getElementById('panel-changes');
+  try {
+    const changes = await fetchJSON('/api/changes');
+    if (!changes.length){ el.innerHTML = '<div class="empty">No changes logged yet.</div>'; return; }
+    el.innerHTML = changes.map(c => `
+      <div class="card">
+        <div class="title"><a href="${esc(c.url)}" target="_blank">${esc(c.title || c.url)}</a></div>
+        <div class="meta"><span>detected: ${fmtDate(c.detected_at)}</span></div>
+      </div>
+    `).join('');
+  } catch(e){ el.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+function renderBreakdown(){
+  const el = document.getElementById('panel-breakdown');
+  const s = window._breakdown;
+  if (!s){ return; }
+  const bars = (obj) => {
+    const entries = Object.entries(obj || {}).sort((a,b) => b[1]-a[1]);
+    const max = entries.length ? entries[0][1] : 1;
+    return entries.map(([k,v]) => `
+      <div class="bar-row">
+        <div class="bar-label">${esc(k)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(v/max*100).toFixed(0)}%"></div></div>
+        <div class="bar-count">${v}</div>
+      </div>`).join('');
+  };
+  el.innerHTML = `
+    <div class="card"><div class="title">By platform / source type</div>${bars(s.by_platform)}</div>
+    <div class="card"><div class="title">By category</div>${bars(s.by_category)}</div>
+  `;
+}
+
+async function loadWeekly(){
+  const el = document.getElementById('panel-weekly');
+  try {
+    const w = await fetchJSON('/api/weekly');
+    const catBars = Object.entries(w.categories || {}).sort((a,b)=>b[1]-a[1])
+      .map(([k,v]) => `<span class="tag" style="margin-right:6px;">${esc(k)}: ${v}</span>`).join('');
+    const top = (w.top || []).length
+      ? w.top.map(a => `
+          <div class="card">
+            <div class="title"><a href="${esc(a.url)}" target="_blank">${esc(a.title)}</a></div>
+            <div class="meta"><span class="tag">${esc(a.category||'')}</span><span>score: ${a.score ?? 0}</span></div>
+          </div>`).join('')
+      : '<div class="empty">No data in the last 7 days yet.</div>';
+    el.innerHTML = `<div class="card"><div class="title">Busiest categories (7d)</div><div style="margin-top:8px;">${catBars || '—'}</div></div>${top}`;
+  } catch(e){ el.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+async function loadStreams(){
+  const el = document.getElementById('panel-streams');
+  try {
+    const streams = await fetchJSON('/api/streams');
+    if (!streams.length){ el.innerHTML = '<div class="empty">No streams configured — edit config/streams.yaml.</div>'; return; }
+    el.innerHTML = streams.map(s => `
+      <div class="card">
+        <div class="title">${esc(s.name)} <span class="tag">${esc(s.country||'')}</span></div>
+        ${s.embed_url ? `<iframe width="100%" height="260" src="${esc(s.embed_url)}" frameborder="0" allowfullscreen style="border-radius:6px;margin-top:8px;"></iframe>` : `<div class="meta"><a href="${esc(s.watch_url||'')}" target="_blank">Watch</a></div>`}
+      </div>
+    `).join('');
+  } catch(e){ el.innerHTML = `<div class="error">${esc(e.message)}</div>`; }
+}
+
+async function loadAll(){
+  document.getElementById('refresh-note').textContent = 'loading…';
+  await Promise.all([loadStats(), loadSources(), loadContent(), loadChanges(), loadWeekly(), loadStreams()]);
+  document.getElementById('refresh-note').textContent = 'updated ' + new Date().toLocaleTimeString();
+}
+loadAll();
+</script>
+</body>
+</html>

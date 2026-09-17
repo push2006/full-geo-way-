@@ -1,0 +1,27 @@
+# Live video streams to embed on the dashboard.
+#
+# Streams can be added/removed from the dashboard itself (no code editing
+# needed) — this file is just where they're persisted. Editing by hand
+# still works too; paste any YouTube link format into video_id.
+
+streams:
+- name: Al Jazeera English — Live
+  country: Global
+  type: video
+  video_id: gCNeDWCI0vo
+- name: France 24 English — Live
+  country: Global
+  type: video
+  video_id: HvZt-nh9sGg
+- name: DW News — Live
+  country: Global
+  type: video
+  video_id: LuKwFajn37U
+- name: ANI NEWS
+  country: Custom
+  type: video
+  video_id: nOuWVqeUGt4
+- name: republiclive
+  country: Custom
+  type: video
+  video_id: jndNegut8RY

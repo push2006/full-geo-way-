@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""
+GeoWatch Pro — ONE COMMAND
+  python run.py           → full pipeline once (no UI)
+  python run.py 24        → 24/7 mode, update every 30 seconds
+"""
+import argparse, sys, time, signal
+from pathlib import Path
+from datetime import datetime
+
+ROOT = Path(__file__).parent
+sys.path.insert(0, str(ROOT))
+
+from core.config import USE_TOR, ENABLE_ONION, STORAGE_BACKEND, SOURCES_FILE, load_sources
+from core.storage import init_db, get_session, upsert_site, get_enabled_sites, update_site_after_check
+from core.crawler import fetch_page, content_hash, polite_delay
+from core.tor_support import is_onion
+from core.trends import collect_trends
+
+DEMO_CRAWL_URL = "https://www.bbc.com/news"
+DEMO_RSS_URL = "https://feeds.bbci.co.uk/news/world/rss.xml"
+
+# 24/7 settings
+UPDATE_INTERVAL = 30  # seconds
+_running = True
+
+
+def _handle_signal(sig, frame):
+    global _running
+    print("\n⏹  Stopping 24/7 mode...")
+    _running = False
+
+
+def do_import(path: str = None):
+    """Import sources from the single config/sources.yaml (or optional path)."""
+    if path:
+        import yaml
+        p = Path(path)
+        if not p.exists():
+            print(f"⚠️  Sources file not found: {path}")
+            return 0
+        with open(p, encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        sources = data.get("sources") or []
+    else:
+        if not SOURCES_FILE.exists():
+            print(f"⚠️  Sources file not found: {SOURCES_FILE}")
+            return 0
+        sources = load_sources(enabled_only=False)
+
+    init_db()
+    session = get_session()
+    count = 0
+    for row in sources:
+        if not isinstance(row, dict):
+            continue
+        url = (row.get("url") or "").strip()
+        if not url:
+            continue
+        name = (row.get("name") or "").strip()
+        cat = (row.get("category") or "general").strip()
+        enabled = row.get("enabled", True)
+        if isinstance(enabled, str):
+            enabled = enabled.lower() in ("true", "1", "yes")
+        stype = (row.get("type") or "").strip().lower()
+        if not stype:
+            stype = "onion" if is_onion(url) else ("rss" if ("rss" in url or "feed" in url) else "page")
+        upsert_site(session, url, name=name, category=cat, enabled=bool(enabled), source_type=stype)
+        count += 1
+    if hasattr(session, "close"):
+        session.close()
+    print(f"✅ Imported {count} sources from {path or SOURCES_FILE.name}")
+    return count
+
+
+def do_check(limit: int = 0, quiet: bool = False):
+    from tqdm import tqdm
+    init_db()
+    session = get_session()
+    sites = get_enabled_sites(session)
+    if not sites:
+        if not quiet:
+            print("⚠️  No sources. Import first.")
+        return 0, 0
+    if limit:
+        sites = sites[:limit]
+    if not quiet:
+        print(f"🔍 Checking {len(sites)} sources...")
+    changed = errors = 0
+    iterator = sites if quiet else tqdm(sites, desc="Monitor")
+    for site in iterator:
+        url = site["url"] if isinstance(site, dict) else site.url
+        if is_onion(url) and not (USE_TOR or ENABLE_ONION):
+            update_site_after_check(session, site, error="Onion skipped")
+            continue
+        text, status, error = fetch_page(url)
+        if error or text is None:
+            update_site_after_check(session, site, status_code=status, error=error)
+            errors += 1
+            polite_delay()
+            continue
+        title = ""
+        for line in (text or "").splitlines():
+            if line.strip() and len(line.strip()) > 10:
+                title = line.strip()[:200]
+                break
+        new_hash = content_hash(text)
+        last_hash = site.get("last_hash") if isinstance(site, dict) else site.last_hash
+        is_changed = last_hash is not None and last_hash != new_hash
+        if is_changed:
+            changed += 1
+        update_site_after_check(
+            session, site,
+            content_hash=new_hash, status_code=status,
+            content=text, title=title, changed=is_changed,
+        )
+        polite_delay()
+    if hasattr(session, "close"):
+        session.close()
+    if not quiet:
+        print(f"✅ Check — Changed: {changed} | Errors: {errors}")
+    return changed, errors
+
+
+def do_crawl(url: str, pages: int = 15, depth: int = 2, name: str = ""):
+    from core.site_crawler import crawl_and_store
+    print(f"🕷  Crawl: {url} (pages={pages}, depth={depth})")
+    crawl_and_store(url, site_name=name, max_pages=pages, max_depth=depth)
+    print("✅ Crawl done")
+
+
+def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False, all_merged: bool = False):
+    from core.rss import fetch_rss, collect_all_merged_feeds
+    from core.classifier import classify, strip_html
+    init_db()
+    session = get_session()
+    items = []
+    if all_merged or (not feed_url and not from_sources):
+        if not quiet:
+            print("📡 Collecting ALL GeoNews+BRICS RSS feeds...")
+        items = collect_all_merged_feeds()
+    elif feed_url:
+        if not quiet:
+            print(f"📡 RSS: {feed_url}")
+        items = fetch_rss(feed_url)
+    elif from_sources:
+        sites = get_enabled_sites(session)
+        feeds = []
+        for s in sites:
+            u = s["url"] if isinstance(s, dict) else s.url
+            if "rss" in u.lower() or "feed" in u.lower():
+                feeds.append(u)
+        if not quiet:
+            print(f"📡 RSS from {len(feeds)} imported feeds...")
+        for f in feeds:
+            items.extend(fetch_rss(f))
+    total = 0
+    for it in items:
+        if not it.get("url"):
+            continue
+        title = it.get("title") or ""
+        content = it.get("summary") or ""
+        cat = it.get("category") or classify(title, content)
+        score = int(it.get("score") or 0)
+        upsert_site(
+            session, it["url"],
+            name=title[:200],
+            title=title[:200],
+            content=content,
+            category=cat,
+            source_type="rss",
+            platform="RSS",
+            score=score,
+        )
+        total += 1
+    if hasattr(session, "close"):
+        session.close()
+    if not quiet:
+        print(f"✅ RSS stored: {total} articles (classified)")
+    return total
+
+
+def do_trends(quiet: bool = False):
+    if not quiet:
+        print("📈 Social trends (Reddit, HN, YouTube, Mastodon, Telegram, Twitter/X, Facebook, Instagram)...")
+    items = collect_trends()
+    init_db()
+    session = get_session()
+    count = 0
+    for it in items:
+        url = it.get("url") or ""
+        if not url:
+            continue
+        upsert_site(
+            session, url,
+            name=(it.get("title") or "")[:200],
+            title=(it.get("title") or "")[:200],
+            content=f"Score: {it.get('score', 0)} | Comments: {it.get('comments', 0)} | {it.get('source', '')}",
+            category=f"trend-{(it.get('platform') or 'social').lower()}",
+            source_type="trend",
+            platform=it.get("platform") or "",
+            score=int(it.get("score") or 0),
+        )
+        count += 1
+    if hasattr(session, "close"):
+        session.close()
+    if not quiet:
+        print(f"✅ Trends stored: {count}")
+    return count
+
+
+
+def do_gnews(quiet: bool = False):
+    """Google News keyword collector, ported from geonews-main. No-op
+    unless ENABLE_GNEWS=true and `gnews` is installed."""
+    from core.config import ENABLE_GNEWS
+    if not ENABLE_GNEWS:
+        if not quiet:
+            print("⏭  GNews collector disabled (ENABLE_GNEWS=false)")
+        return 0
+    from core.gnews_search import collect
+    if not quiet:
+        print("🔎 Google News keyword search...")
+    n = collect(quiet=quiet)
+    if not quiet:
+        print(f"✅ GNews stored: {n} articles")
+    return n
+
+
+def do_streams():
+    """List configured live-video streams, ported from BRICS-- (config/streams.yaml)."""
+    from core.video import load_streams
+    streams = load_streams()
+    if not streams:
+        print("No streams configured — edit config/streams.yaml")
+    for s in streams:
+        print(f"  {s.get('name','?')} [{s.get('country','')}] {s.get('watch_url','')}")
+    return streams
+
+
+def do_cycle(quiet: bool = False):
+    """One update cycle: trends + RSS + optional GNews + check (stores real content)."""
+    do_trends(quiet=quiet)
+    do_rss(all_merged=True, quiet=quiet)
+    do_gnews(quiet=quiet)
+    changed, errors = do_check(quiet=quiet)
+    return changed, errors
+
+
+def do_serve(interval: int = UPDATE_INTERVAL, host: str = None, port: int = None):
+    """ONE command: runs the 24/7 collector loop in a background thread
+    and the dashboard in the foreground, in the same process. This is
+    what you want if you just want to type one thing and have both
+    collection and the dashboard running."""
+    import threading
+    from core.config import DASHBOARD_HOST, DASHBOARD_PORT
+    from core.webapp import run_dashboard
+
+    t = threading.Thread(target=do_24_7, args=(interval,), daemon=True)
+    t.start()
+
+    time.sleep(1)  # let the initial import/cycle start printing before the dashboard banner
+    run_dashboard(host=host or DASHBOARD_HOST, port=port or DASHBOARD_PORT)
+
+
+def do_24_7(interval: int = UPDATE_INTERVAL):
+    """Run 24/7 — update every N seconds."""
+    global _running
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
+
+    print("=" * 54)
+    print("  GeoWatch Pro — 24/7 MODE")
+    print(f"  Update every {interval} seconds")
+    print("  Press Ctrl+C to stop")
+    print("=" * 54)
+    print()
+
+    # First-time setup
+    print("① Initial import...")
+    do_import()
+    print()
+    print("② First full cycle...")
+    do_cycle(quiet=False)
+    print()
+    print(f"③ Entering 24/7 loop (every {interval}s)...")
+    print("   Dashboard: open another terminal → python run.py dash")
+    print("   Or open http://localhost:8501 if already running")
+    print()
+
+    cycle_num = 1
+    while _running:
+        cycle_num += 1
+        start = time.time()
+        ts = datetime.now().strftime("%H:%M:%S")
+        print(f"── Cycle #{cycle_num} @ {ts} ──")
+        try:
+            changed, errors = do_cycle(quiet=True)
+            print(f"   ✓ Updated | changed={changed} errors={errors}")
+        except Exception as e:
+            print(f"   ✗ Cycle error: {e}")
+        elapsed = time.time() - start
+        sleep_for = max(1, interval - elapsed)
+        # Sleep in small steps so Ctrl+C is responsive
+        for _ in range(int(sleep_for)):
+            if not _running:
+                break
+            time.sleep(1)
+        if not _running:
+            break
+        if sleep_for - int(sleep_for) > 0 and _running:
+            time.sleep(sleep_for - int(sleep_for))
+
+    print("24/7 mode stopped.")
+
+
+def do_all():
+    """One-shot: everything once + dashboard."""
+    print("=" * 54)
+    print("  GeoWatch Pro — FULL PIPELINE (once)")
+    print("=" * 54)
+    print()
+    print("① Import sources...")
+    do_import()
+    print()
+    print("② Trends + RSS + sample crawl + check...")
+    do_trends()
+    do_rss(all_merged=True)
+    try:
+        do_crawl(DEMO_CRAWL_URL, pages=10, depth=1, name="BBC News")
+    except Exception as e:
+        print(f"   Crawl partial: {e}")
+    do_check()
+    print()
+    print("③ Done (no dashboard — Streamlit removed)")
+
+
+def main():
+    p = argparse.ArgumentParser(
+        description="GeoWatch Pro — One command / 24/7 mode",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+ONE COMMAND (run once):
+  python run.py
+
+24/7 MODE (update every {UPDATE_INTERVAL} seconds):
+  python run.py 24
+
+Other:
+  python run.py trends
+  python run.py check
+  python run.py crawl URL --pages 25
+  python run.py rss --url FEED
+  python run.py rss --from-sources
+  python run.py gnews
+  python run.py streams
+  python run.py notify
+  python run.py dashboard
+  python run.py serve      ← ONE command: collection + dashboard together
+        """
+    )
+    sub = p.add_subparsers(dest="cmd")
+    sub.add_parser("all")
+    sub.add_parser("24", help="24/7 mode — update every 30s")
+    sub.add_parser("watch", help="Same as 24")
+    sub.add_parser("check")
+    sub.add_parser("trends")
+    c = sub.add_parser("crawl")
+    c.add_argument("url")
+    c.add_argument("--pages", type=int, default=20)
+    c.add_argument("--depth", type=int, default=2)
+    c.add_argument("--name", default="")
+    i = sub.add_parser("import")
+    i.add_argument("file", nargs="?", default=None)
+    r = sub.add_parser("rss")
+    r.add_argument("--url", default=None)
+    r.add_argument("--from-sources", action="store_true")
+    sub.add_parser("gnews", help="Google News keyword search (needs ENABLE_GNEWS=true + pip install gnews)")
+    sub.add_parser("streams", help="List configured live-video streams (config/streams.yaml)")
+    sub.add_parser("notify", help="Send a digest now over whichever ENABLE_EMAIL/TELEGRAM/WHATSAPP channels are on")
+    d = sub.add_parser("dashboard", help="Serve the live dashboard (reads real data, no AI calls)")
+    d.add_argument("--host", default=None)
+    d.add_argument("--port", type=int, default=None)
+    sv = sub.add_parser("serve", help="ONE command: 24/7 collection + dashboard together, one process")
+    sv.add_argument("--host", default=None)
+    sv.add_argument("--port", type=int, default=None)
+    p.add_argument("--interval", type=int, default=UPDATE_INTERVAL, help="Seconds between updates in 24/7 mode")
+
+    args = p.parse_args()
+    interval = getattr(args, "interval", UPDATE_INTERVAL) or UPDATE_INTERVAL
+
+    if args.cmd in ("24", "watch"):
+        do_24_7(interval=interval)
+    elif args.cmd == "import":
+        do_import(args.file)
+    elif args.cmd == "check":
+        do_check()
+    elif args.cmd == "crawl":
+        do_crawl(args.url, args.pages, args.depth, args.name)
+    elif args.cmd == "rss":
+        do_rss(args.url, args.from_sources)
+    elif args.cmd == "trends":
+        do_trends()
+    elif args.cmd == "gnews":
+        do_gnews()
+    elif args.cmd == "streams":
+        do_streams()
+    elif args.cmd == "notify":
+        from notifications.digest import run_digest
+        sent = run_digest()
+        print(f"Digest sent: {len(sent)} items considered")
+        from notifications.weekly_report import run_weekly_report
+        if run_weekly_report():
+            print("Weekly report also sent")
+    elif args.cmd == "dashboard":
+        from core.config import DASHBOARD_HOST, DASHBOARD_PORT
+        from core.webapp import run_dashboard
+        run_dashboard(host=args.host or DASHBOARD_HOST, port=args.port or DASHBOARD_PORT)
+    elif args.cmd == "serve":
+        do_serve(interval=interval, host=args.host, port=args.port)
+    elif args.cmd == "all":
+        do_all()
+    else:
+        # default: one full run
+        do_all()
+
+
+if __name__ == "__main__":
+    main()
