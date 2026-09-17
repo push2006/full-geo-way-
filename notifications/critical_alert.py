@@ -38,10 +38,23 @@ def check_and_alert(articles):
     lines.append("</ul>")
     html = "\n".join(lines)
 
+    # FIX #10: Add error handling for all notification sends
     if getattr(C, "ENABLE_EMAIL", False):
-        email_report.send(html, subject="\U0001F6A8 GeoWatch CRITICAL ALERT")
+        try:
+            email_report.send(html, subject="\U0001F6A8 GeoWatch CRITICAL ALERT")
+        except Exception as e:
+            print(f"⚠️  Email alert failed: {e}")
+    
     if getattr(C, "ENABLE_WHATSAPP", False):
-        whatsapp.send(critical, limit=5)
+        try:
+            whatsapp.send(critical, limit=5)
+        except Exception as e:
+            print(f"⚠️  WhatsApp alert failed: {e}")
+    
     if getattr(C, "ENABLE_TELEGRAM", False):
-        telegram.send(critical, limit=5)
+        try:
+            telegram.send(critical, limit=5)
+        except Exception as e:
+            print(f"⚠️  Telegram alert failed: {e}")
+    
     return critical
