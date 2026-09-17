@@ -110,13 +110,13 @@ MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", "600000"))
 USE_TOR = os.getenv("USE_TOR", "false").lower() in ("true", "1", "yes")
 TOR_SOCKS_HOST = os.getenv("TOR_SOCKS_HOST", "127.0.0.1")
 TOR_SOCKS_PORT = int(os.getenv("TOR_SOCKS_PORT", "9050"))
-ENABLE_ONION = os.getenv("ENABLE_ONION", "true").lower() in ("true", "1", "yes")
+ENABLE_ONION = os.getenv("ENABLE_ONION", "false").lower() in ("true", "1", "yes")
 
 # RSS
 RSS_MAX_ITEMS = int(os.getenv("RSS_MAX_ITEMS", "15"))
 
 # Google News keyword collector (ported from geonews-main; off by default)
-ENABLE_GNEWS = os.getenv("ENABLE_GNEWS", "true").lower() in ("true", "1", "yes")
+ENABLE_GNEWS = os.getenv("ENABLE_GNEWS", "false").lower() in ("true", "1", "yes")
 GNEWS_LANGUAGE = os.getenv("GNEWS_LANGUAGE", "en")
 GNEWS_COUNTRY = os.getenv("GNEWS_COUNTRY", "US")
 GNEWS_PERIOD = os.getenv("GNEWS_PERIOD", "1d")
@@ -128,7 +128,7 @@ GNEWS_QUERY_GROUPS = [
 ]
 
 # OFAC sanctions screening (ported from geonews-main; not auto-run)
-ENABLE_SANCTIONS_SCREEN = os.getenv("ENABLE_SANCTIONS_SCREEN", "true").lower() in ("true", "1", "yes")
+ENABLE_SANCTIONS_SCREEN = os.getenv("ENABLE_SANCTIONS_SCREEN", "false").lower() in ("true", "1", "yes")
 
 # --- Notifications (ported from BRICS/geonews, off by default) ---
 ENABLE_EMAIL = os.getenv("ENABLE_EMAIL", "false").lower() in ("true", "1", "yes")

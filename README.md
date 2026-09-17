@@ -14,6 +14,8 @@ Get your local instance up and running in less than a minute.
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
+# Windows CMD: copy .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
 python run.py
 ```
 Open your browser and navigate to **http://127.0.0.1:8501**
