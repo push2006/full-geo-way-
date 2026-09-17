@@ -31,6 +31,12 @@ def _handle_signal(sig, frame):
     global _running
     print("\n⏹  Stopping...")
     _running = False
+    # FIX #2: Clean up MongoDB connections on shutdown
+    try:
+        from core.storage import cleanup_mongo
+        cleanup_mongo()
+    except Exception:
+        pass
     # sys.exit() here raises SystemExit wherever the main thread currently
     # is — inside do_24_7's own loop when running standalone (run.py 24),
     # or inside Flask's blocking app.run() when running do_serve (plain
@@ -51,9 +57,17 @@ def do_import(path: str = None):
         if not p.exists():
             print(f"⚠️  Sources file not found: {path}")
             return 0
-        with open(p, encoding="utf-8") as f:
-            data = yaml.safe_load(f) or {}
-        sources = data.get("sources") or []
+        try:
+            with open(p, encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            sources = data.get("sources") or []
+        # FIX #9: Handle YAML parsing errors explicitly
+        except yaml.YAMLError as e:
+            print(f"❌ Invalid YAML in {p}: {e}")
+            return 0
+        except Exception as e:
+            print(f"❌ Error reading {p}: {e}")
+            return 0
     else:
         if not SOURCES_FILE.exists():
             print(f"⚠️  Sources file not found: {SOURCES_FILE}")
@@ -81,7 +95,9 @@ def do_import(path: str = None):
         count += 1
     if hasattr(session, "close"):
         session.close()
-    print(f"✅ Imported {count} sources from {path or SOURCES_FILE.name}")
+    # FIX #11: Use conditional emoji based on actual result
+    symbol = "✅" if count > 0 else "⚠️"
+    print(f"{symbol} Imported {count} sources from {path or SOURCES_FILE.name}")
     return count
 
 
@@ -101,7 +117,18 @@ def do_check(limit: int = 0, quiet: bool = False):
     changed = errors = 0
     iterator = sites if quiet else tqdm(sites, desc="Monitor")
     for site in iterator:
-        url = site["url"] if isinstance(site, dict) else site.url
+        # FIX #8: Add type safety with explicit error handling
+        try:
+            url = site["url"] if isinstance(site, dict) else site.url
+            if not url or not isinstance(url, str):
+                errors += 1
+                continue
+        except (AttributeError, KeyError, TypeError) as e:
+            if not quiet:
+                print(f"   ⚠️  Invalid site object: {e}")
+            errors += 1
+            continue
+            
         if is_onion(url) and not (USE_TOR or ENABLE_ONION):
             update_site_after_check(session, site, error="Onion skipped")
             continue
@@ -117,7 +144,10 @@ def do_check(limit: int = 0, quiet: bool = False):
                 title = line.strip()[:200]
                 break
         new_hash = content_hash(text)
-        last_hash = site.get("last_hash") if isinstance(site, dict) else site.last_hash
+        try:
+            last_hash = site.get("last_hash") if isinstance(site, dict) else site.last_hash
+        except (AttributeError, KeyError, TypeError):
+            last_hash = None
         is_changed = last_hash is not None and last_hash != new_hash
         if is_changed:
             changed += 1
@@ -188,7 +218,9 @@ def do_rss(feed_url: str = None, from_sources: bool = False, quiet: bool = False
     if hasattr(session, "close"):
         session.close()
     if not quiet:
-        print(f"✅ RSS stored: {total} articles (classified)")
+        # FIX #11: Use conditional emoji based on actual result
+        symbol = "✅" if total > 0 else "⚠️"
+        print(f"{symbol} RSS stored: {total} articles (classified)")
     return total
 
 
@@ -295,12 +327,50 @@ def do_cycle(quiet: bool = False):
     from core.status import record_cycle, set_running
     set_running(True)
     t0 = time.time()
-    do_trends(quiet=quiet)
-    do_rss(all_merged=True, quiet=quiet)
-    do_gnews(quiet=quiet)
-    do_sanctions(quiet=quiet)
-    changed, errors = do_check(quiet=quiet)
-    record_cycle(changed=changed, errors=errors, duration_sec=time.time() - t0, message="ok")
+    
+    # FIX #4: Add explicit error tracking for each collection function
+    errors_detail = []
+    
+    try:
+        do_trends(quiet=quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"   ⚠️  Trends error: {e}")
+        errors_detail.append(f"trends: {str(e)[:50]}")
+    
+    try:
+        do_rss(all_merged=True, quiet=quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"   ⚠️  RSS error: {e}")
+        errors_detail.append(f"rss: {str(e)[:50]}")
+    
+    try:
+        do_gnews(quiet=quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"   ⚠️  GNews error: {e}")
+        errors_detail.append(f"gnews: {str(e)[:50]}")
+    
+    try:
+        do_sanctions(quiet=quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"   ⚠️  Sanctions error: {e}")
+        errors_detail.append(f"sanctions: {str(e)[:50]}")
+    
+    try:
+        changed, errors = do_check(quiet=quiet)
+    except Exception as e:
+        if not quiet:
+            print(f"   ⚠️  Check error: {e}")
+        errors_detail.append(f"check: {str(e)[:50]}")
+        changed, errors = 0, 1
+    
+    duration = time.time() - t0
+    msg = "ok" if not errors_detail else f"partial: {'; '.join(errors_detail[:3])}"
+    record_cycle(changed=changed, errors=errors, duration_sec=duration, message=msg)
+    
     return changed, errors
 
 
@@ -431,7 +501,8 @@ Collects continuously + serves dashboard at http://127.0.0.1:8501
     # Keep serve as optional alias so Procfile / old docs still work
     p.add_argument("cmd", nargs="?", default="serve", help=argparse.SUPPRESS)
     args = p.parse_args()
-    interval = args.interval or UPDATE_INTERVAL
+    # FIX #1: Use 'is not None' instead of 'or' to allow explicit 0 (even if unlikely)
+    interval = args.interval if args.interval is not None else UPDATE_INTERVAL
     # Always run the one correct mode
     do_serve(interval=interval, host=args.host, port=args.port)
 
